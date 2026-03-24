@@ -1,0 +1,28 @@
+{
+  "seq": 0,
+  "timestamp": "2026-03-22T23:16:55.902205",
+  "backend": "groq",
+  "model": "qwen/qwen3-32b",
+  "key_number": 4,
+  "success": true,
+  "elapsed_ms": 777,
+  "error": null,
+  "messages_sent": [
+    {
+      "role": "system",
+      "content": "You are a JSON-only responder. Output only valid JSON, nothing else."
+    },
+    {
+      "role": "user",
+      "content": "Respond ONLY with this exact JSON: {\"status\": \"ok\", \"message\": \"FraudSense AI ready\"}"
+    }
+  ],
+  "response": "<think>\nOkay, the user wants me to respond with a specific JSON. Let me check the instructions again. They said to output only valid JSON and that the response should be exactly {\"status\": \"ok\", \"message\": \"FraudSense AI ready\"}. I need to make sure there's no extra text or formatting. I'll just copy that JSON as is. No need for any changes. Let me verify the syntax—yes, the keys are in quotes, the values are strings, and the structure is correct. Alright, that should do it.\n</think>\n\n{\"status\": \"ok\", \"message\": \"FraudSense AI ready\"}",
+  "meta": {
+    "system_prompt_chars": 68,
+    "user_messages": 1,
+    "history_turns": 0,
+    "response_chars": 540,
+    "total_messages": 2
+  }
+}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Officer Login — FundTrace AI</title>
+<link rel="stylesheet" href="/client/css/app.css">
+<style>
+  body { background: #1a1a18; display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .auth-card { background: #242422; border:0.5px solid rgba(255,255,255,0.1); border-radius:12px; padding:32px; width:100%; max-width:380px; color:#fff; }
+  .officer-logo { text-align:center; margin-bottom:28px; }
+  .officer-mark { display:inline-flex; align-items:center; gap:10px; font-size:18px; font-weight:600; color:#fff; }
+  .auth-title { font-size:20px; font-weight:600; margin-bottom:4px; }
+  .auth-sub { font-size:13px; opacity:0.5; margin-bottom:24px; }
+  .form-label { color:rgba(255,255,255,0.6); }
+  .form-input { background:#1a1a18; border-color:rgba(255,255,255,0.15); color:#fff; }
+  .form-input::placeholder { color:rgba(255,255,255,0.25); }
+  .form-input:focus { border-color:rgba(255,255,255,0.4); box-shadow:0 0 0 3px rgba(255,255,255,0.06); }
+  .btn-officer { background:#E24B4A; color:#fff; border-color:#E24B4A; width:100%; }
+  .btn-officer:hover { background:#C93B3A; }
+  .error-box { background:rgba(226,75,74,0.15); color:#F09595; border:0.5px solid rgba(226,75,74,0.4); border-radius:6px; padding:10px 14px; font-size:13px; margin-bottom:16px; display:none; }
+  .error-box.visible { display:block; }
+  .pw-wrap { position:relative; }
+  .pw-wrap .form-input { padding-right:44px; }
+  .pw-toggle { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:rgba(255,255,255,0.4); font-size:16px; }
+  .client-link { text-align:center; margin-top:16px; font-size:12px; color:rgba(255,255,255,0.3); }
+  .client-link a { color:rgba(255,255,255,0.5); }
+</style>
+</head>
+<body>
+<div>
+  <div class="officer-logo">
+    <div class="officer-mark"><span style="width:10px;height:10px;border-radius:50%;background:#E24B4A;display:inline-block;"></span> FundTrace AI — Officer Portal</div>
+  </div>
+  <div class="auth-card">
+    <div class="auth-title">Officer Sign In</div>
+    <div class="auth-sub">Restricted access — authorized personnel only</div>
+    <div class="error-box" id="errorBox"></div>
+    <div class="form-group">
+      <label class="form-label">Officer email</label>
+      <input type="email" id="email" class="form-input" placeholder="officer@fundtrace.bank" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="password" class="form-input" placeholder="Password" autocomplete="current-password">
+        <button class="pw-toggle" onclick="togglePw()">👁</button>
+      </div>
+    </div>
+    <button class="btn btn-officer" id="loginBtn" onclick="handleLogin()">Sign in to portal</button>
+  </div>
+  <div class="client-link">Client banking? <a href="/client/login.html">Go to client login</a></div>
+</div>
+
+<script src="/client/js/api.js"></script>
+<script>
+  getUser().then(u => { if (u && u.role === 'officer') window.location.href = '/officer/dashboard.html'; });
+
+  function togglePw() {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const errBox = document.getElementById('errorBox');
+    const btn = document.getElementById('loginBtn');
+    errBox.classList.remove('visible');
+
+    if (!email || !password) { errBox.textContent = 'Email and password required'; errBox.classList.add('visible'); return; }
+
+    setLoading(btn, true, 'Signing in...');
+    try {
+      const { user } = await api.post('/auth/login', { email, password });
+      if (user.role !== 'officer') {
+        errBox.textContent = 'Access denied. Officer credentials required.';
+        errBox.classList.add('visible');
+        await api.post('/auth/logout');
+        setLoading(btn, false);
+        return;
+      }
+      window.location.href = '/officer/dashboard.html';
+    } catch (e) {
+      errBox.textContent = e.message;
+      errBox.classList.add('visible');
+      setLoading(btn, false);
+    }
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+Using key: gsk_jhG5DF2U...
+
+openai/gpt-oss-safeguard-20b: WORKS | 419ms | WORKING
+openai/gpt-oss-20b: WORKS | 143ms | 
+qwen/qwen3-32b: WORKS | 181ms | <think>
+Okay, the user wants me to say exactly "WORKING". Let me check the instr
+llama-3.3-70b-versatile: WORKS | 228ms | WORKING
+openai/gpt-oss-120b: WORKS | 202ms | WORKING

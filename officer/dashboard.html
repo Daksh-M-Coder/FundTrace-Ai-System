@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FundTrace AI — Officer Dashboard</title>
+<link rel="stylesheet" href="/client/css/app.css">
+<style>
+  body { background:#f5f4ef; }
+  .officer-topbar { background:#1a1a18; color:#fff; height:52px; display:flex; align-items:center; padding:0 20px; gap:16px; position:sticky; top:0; z-index:100; }
+  .officer-logo { font-size:14px; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .officer-nav { display:flex; gap:2px; margin-left:20px; }
+  .officer-tab { padding:5px 12px; border-radius:5px; font-size:13px; cursor:pointer; color:rgba(255,255,255,0.5); border:none; background:transparent; transition:all 0.15s; font-family:inherit; }
+  .officer-tab:hover { color:#fff; background:rgba(255,255,255,0.08); }
+  .officer-tab.active { color:#fff; background:rgba(255,255,255,0.12); }
+  .live-badge { background:rgba(226,75,74,0.2); color:#F09595; font-size:11px; font-weight:500; padding:3px 8px; border-radius:20px; display:flex; align-items:center; gap:5px; }
+  .live-dot { width:6px; height:6px; border-radius:50%; background:#E24B4A; animation:pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .metrics-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .metric { background:#fff; border:0.5px solid rgba(0,0,0,0.12); border-radius:10px; padding:16px; }
+  .metric-lbl { font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.3px; margin-bottom:4px; }
+  .metric-val { font-size:22px; font-weight:600; }
+  .metric-delta { font-size:11px; color:#888; margin-top:4px; }
+
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  .panel { background:#fff; border:0.5px solid rgba(0,0,0,0.12); border-radius:10px; padding:16px; }
+  .panel-title { font-size:13px; font-weight:600; margin-bottom:12px; color:#5f5e5a; text-transform:uppercase; letter-spacing:0.3px; }
+
+  .alert-feed { max-height:320px; overflow-y:auto; }
+  .feed-item { padding:10px 12px; border-radius:7px; margin-bottom:6px; border:0.5px solid; font-size:12px; cursor:pointer; transition:all 0.15s; }
+  .feed-item:hover { filter:brightness(0.97); }
+  .feed-high { background:#FCEBEB; border-color:#F09595; }
+  .feed-medium { background:#FAEEDA; border-color:#FAC775; }
+  .feed-low { background:#E6F1FB; border-color:#B5D4F4; }
+  .feed-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; }
+  .feed-id { font-weight:600; }
+  .feed-score { font-size:11px; font-weight:600; }
+  .feed-desc { color:rgba(0,0,0,0.6); }
+  .feed-time { font-size:10px; opacity:0.6; margin-top:2px; }
+
+  .live-txn-feed { max-height:280px; overflow-y:auto; }
+  .live-txn { padding:8px 10px; border-radius:6px; margin-bottom:4px; background:#f1efe8; font-size:12px; display:flex; justify-content:space-between; }
+  .live-txn.new { background:#E1F5EE; animation:fadeIn 0.4s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
+
+  /* Graph explorer */
+  .graph-section { background:#fff; border:0.5px solid rgba(0,0,0,0.12); border-radius:10px; overflow:hidden; margin-bottom:20px; }
+  .graph-toolbar { padding:12px 16px; background:#fff; border-bottom:0.5px solid rgba(0,0,0,0.1); display:flex; align-items:center; gap:10px; }
+  .graph-canvas-wrap { background:#f5f4ef; height:420px; position:relative; }
+  #graphCanvas { width:100%; height:100%; display:block; cursor:grab; }
+
+  /* Accounts table */
+  .data-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .data-table th { text-align:left; padding:8px 12px; background:#f1efe8; font-size:11px; font-weight:500; color:#888; text-transform:uppercase; letter-spacing:0.3px; }
+  .data-table td { padding:9px 12px; border-bottom:0.5px solid rgba(0,0,0,0.06); }
+  .data-table tr:hover td { background:#f9f8f4; }
+  .data-table tr:last-child td { border-bottom:none; }
+
+  .status-frozen { background:#FCEBEB; color:#A32D2D; font-size:10px; font-weight:500; padding:2px 8px; border-radius:20px; }
+  .status-active { background:#E1F5EE; color:#0F6E56; font-size:10px; font-weight:500; padding:2px 8px; border-radius:20px; }
+  .status-dormant { background:#f1efe8; color:#888; font-size:10px; font-weight:500; padding:2px 8px; border-radius:20px; }
+
+  .risk-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; }
+
+  /* Tab content */
+  .tab-content { display:none; padding:20px; }
+  .tab-content.active { display:block; }
+
+  .tooltip { position:absolute; background:#fff; border:0.5px solid rgba(0,0,0,0.2); border-radius:8px; padding:10px 12px; font-size:12px; pointer-events:none; min-width:180px; display:none; z-index:100; box-shadow:0 4px 16px rgba(0,0,0,0.12); }
+  .tooltip.visible { display:block; }
+  .legend { position:absolute; bottom:12px; left:12px; background:#fff; border:0.5px solid rgba(0,0,0,0.12); border-radius:8px; padding:10px 12px; font-size:11px; }
+  .legend-row { display:flex; align-items:center; gap:6px; margin-bottom:4px; color:#5f5e5a; }
+</style>
+</head>
+<body>
+
+<div class="officer-topbar">
+  <div class="officer-logo"><span style="width:8px;height:8px;border-radius:50%;background:#E24B4A;display:inline-block;"></span> FundTrace AI</div>
+  <div class="officer-nav">
+    <button class="officer-tab active" onclick="switchTab('overview', this)">Overview</button>
+    <button class="officer-tab" onclick="switchTab('graph', this)">Graph Explorer</button>
+    <button class="officer-tab" onclick="switchTab('accounts', this)">Accounts</button>
+    <button class="officer-tab" onclick="switchTab('transactions', this)">Transactions</button>
+    <button class="officer-tab" onclick="switchTab('alerts', this)">Fraud Alerts</button>
+    <button class="officer-tab" onclick="switchTab('coupons', this)">Coupons</button>
+    <button class="officer-tab" onclick="switchTab('ai', this)">AI Analysis</button>
+  </div>
+  <div style="margin-left:auto; display:flex; align-items:center; gap:12px;">
+    <div class="live-badge"><span class="live-dot"></span> Live</div>
+    <span style="font-size:13px; color:rgba(255,255,255,0.5);" id="officerName">—</span>
+    <button class="btn btn-sm" style="color:rgba(255,255,255,0.6); border-color:rgba(255,255,255,0.2);" onclick="officerLogout()">Sign out</button>
+  </div>
+</div>
+
+<!-- TRANSACTIONS TAB -->
+<div class="tab-content" id="tab-transactions">
+<style>
+  /* ── Transactions Tab ───────────────────────────── */
+  .txn-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .txn-title { font-size:18px; font-weight:700; color:#1a1a18; }
+  .txn-subtitle { font-size:12px; color:#888; margin-top:2px; }
+
+  .txn-controls { background:#fff; border:0.5px solid rgba(0,0,0,0.1); border-radius:10px; padding:14px 16px; display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px; }
+  .txn-controls select, .txn-controls input { border:0.5px solid rgba(0,0,0,0.14); border-radius:7px; padding:7px 10px; font-size:12px; font-family:inherit; background:#fff; color:#1a1a18; outline:none; cursor:pointer; }
+  .txn-controls select:focus { border-color:#378ADD; }
+  .ctrl-label { font-size:11px; color:#888; font-weight:500; margin-right:2px; }
+  .ctrl-divider { width:1px; height:24px; background:rgba(0,0,0,0.1); margin:0 4px; }
+  .btn-export { border:none; border-radius:7px; padding:7px 14px; font-size:12px; font-weight:500; cursor:pointer; font-family:inherit; transition:all 0.15s; display:flex; align-items:center; gap:5px; }
+  .btn-export-csv  { background:#E1F5EE; color:#0F6E56; }
+  .btn-export-csv:hover  { background:#0F6E56; color:#fff; }
+  .btn-export-json { background:#E6F1FB; color:#1a5fa8; }
+  .btn-export-json:hover { background:#1a5fa8; color:#fff; }
+
+  .txn-summary-bar { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .txn-stat { background:#fff; border:0.5px solid rgba(0,0,0,0.1); border-radius:8px; padding:10px 14px; flex:1; min-width:120px; }
+  .txn-stat-lbl { font-size:10px; color:#888; text-transform:uppercase; letter-spacing:0.3px; }
+  .txn-stat-val { font-size:18px; font-weight:700; color:#1a1a18; margin-top:2px; }
+
+  /* Transaction table */
+  .txn-table-wrap { background:#fff; border:0.5px solid rgba(0,0,0,0.1); border-radius:10px; overflow:hidden; margin-bottom:16px; }
+  .txn-table-head { padding:12px 16px; border-bottom:0.5px solid rgba(0,0,0,0.08); display:flex; align-items:center; justify-content:space-between; }
+  .txn-table-scroll { overflow-x:auto; max-height:400px; overflow-y:auto; }
+  .txn-tbl { width:100%; border-collapse:collapse; font-size:12px; min-width:900px; }
+  .txn-tbl th { text-align:left; padding:8px 12px; background:#f8f7f3; font-size:10px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:0.3px; position:sticky; top:0; z-index:2; }
+  .txn-tbl td { padding:9px 12px; border-bottom:0.5px solid rgba(0,0,0,0.05); vertical-align:middle; white-space:nowrap; }
+  .txn-tbl tr:hover td { background:#faf9f5; cursor:pointer; }
+  .txn-tbl tr.selected td { background:#E6F1FB; }
+  .txn-tbl tr:last-child td { border-bottom:none; }
+
+  .fs-bar { display:inline-flex; align-items:center; gap:5px; }
+  .fs-track { width:40px; height:5px; border-radius:3px; background:#f1efe8; overflow:hidden; }
+  .fs-fill { height:100%; border-radius:3px; transition:width 0.3s; }
+  .code-chip { background:#f1efe8; border-radius:5px; padding:2px 6px; font-size:10px; font-weight:500; color:#5f5e5a; font-family:monospace; }
+  .ch-badge { border-radius:20px; padding:2px 8px; font-size:10px; font-weight:600; }
+  .ch-UPI  { background:#E1F5EE; color:#0F6E56; }
+  .ch-NEFT { background:#E6F1FB; color:#1a5fa8; }
+  .ch-IMPS { background:#FAEEDA; color:#7a5c0f; }
+  .ch-RTGS { background:#f3e8fb; color:#6b3fa0; }
+  .ch-COUPON { background:#FCE8FB; color:#8b3fa0; }
+  .st-completed { background:#E1F5EE; color:#0F6E56; border-radius:20px; padding:2px 8px; font-size:10px; font-weight:600; }
+  .st-pending   { background:#FAEEDA; color:#7a5c0f; border-radius:20px; padding:2px 8px; font-size:10px; font-weight:600; }
+  .st-flagged   { background:#FCEBEB; color:#A32D2D; border-radius:20px; padding:2px 8px; font-size:10px; font-weight:600; }
+  .st-failed    { background:#f1efe8; color:#888; border-radius:20px; padding:2px 8px; font-size:10px; font-weight:600; }
+
+  /* Account Search Box */
+  .acc-search-wrap { position:relative; display:inline-block; }
+  .acc-search-input { border:0.5px solid rgba(0,0,0,0.14); border-radius:7px; padding:7px 28px 7px 10px; font-size:12px; font-family:inherit; background:#fff; color:#1a1a18; outline:none; width:220px; }
+  .acc-search-input:focus { border-color:#378ADD; }
+  .acc-search-clear { position:absolute; right:7px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:12px; color:#aaa; display:none; }
+  .acc-search-clear.visible { display:block; }
+  .acc-search-results { position:absolute; top:calc(100% + 4px); left:0; width:280px; background:#fff; border:0.5px solid rgba(0,0,0,0.12); border-radius:8px; box-shadow:0 6px 24px rgba(0,0,0,0.1); z-index:999; max-height:220px; overflow-y:auto; display:none; }
+  .acc-search-results.open { display:block; }
+  .acc-result-item { padding:8px 12px; cursor:pointer; border-bottom:0.5px solid rgba(0,0,0,0.05); transition:background 0.1s; }
+  .acc-result-item:hover { background:#f1efe8; }
+  .acc-result-item:last-child { border-bottom:none; }
+  .acc-result-name { font-size:12px; font-weight:600; color:#1a1a18; }
+  .acc-result-sub { font-size:10px; color:#888; margin-top:1px; font-family:monospace; }
+  .acc-selected-tag { display:inline-flex; align-items:center; gap:5px; background:#E6F1FB; border:0.5px solid rgba(55,138,221,0.3); border-radius:20px; padding:4px 10px; font-size:11px; color:#1a5fa8; font-weight:600; cursor:default; }
+  .acc-selected-tag span { cursor:pointer; color:#aaa; font-size:13px; line-height:1; }
+  .acc-selected-tag span:hover { color:#E24B4A; }
+
+  /* Mini relation graph — full interactive */
+  .mini-graph-section { background:#fff; border:0.5px solid rgba(0,0,0,0.1); border-radius:10px; overflow:hidden; margin-bottom:16px; }
+  .mini-graph-head { padding:12px 16px; border-bottom:0.5px solid rgba(0,0,0,0.08); display:flex; align-items:center; justify-content:space-between; }
+  .mini-graph-head-actions { display:flex; align-items:center; gap:8px; }
+  #miniGraphCanvas { width:100%; height:420px; display:block; background:#f5f4ef; cursor:grab; }
+  #miniGraphCanvas.panning { cursor:grabbing; }
+  /* Tooltip for mini graph */
+  .mg-tooltip { position:absolute; background:rgba(26,26,24,0.92); color:#fff; border-radius:8px; padding:8px 12px; font-size:11px; pointer-events:none; display:none; z-index:100; min-width:150px; }
+  .mg-tooltip.visible { display:block; }
+
+  /* AI Question Panel */
+  .ai-qs-section { background:#1a1a18; border-radius:12px; padding:18px; margin-bottom:16px; }
+  .ai-qs-title { font-size:13px; font-weight:600; color:#fff; margin-bottom:4px; }
+  .ai-qs-sub { font-size:11px; color:rgba(255,255,255,0.4); margin-bottom:14px; }
+  .qs-category { margin-bottom:14px; }
+  .qs-cat-name { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:rgba(255,255,255,0.3); margin-bottom:7px; display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; }
+  .qs-cat-name::after { content:'▾'; font-size:10px; transition:transform 0.2s; }
+  .qs-cat-name.collapsed::after { transform:rotate(-90deg); }
+  .qs-chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .qs-chips.hidden { display:none; }
+  .qs-chip { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:5px 12px; font-size:11px; color:rgba(255,255,255,0.65); cursor:pointer; transition:all 0.15s; font-family:inherit; }
+  .qs-chip:hover { background:rgba(55,138,221,0.25); border-color:rgba(55,138,221,0.5); color:#fff; transform:translateY(-1px); }
+  .qs-chip:active { transform:translateY(0); }
+</style>
+
+<div style="padding:20px;">
+  <!-- Header -->
+  <div class="txn-header">
+    <div>
+      <div class="txn-title">💸 Transaction Management</div>
+      <div class="txn-subtitle" id="txnTabSubtitle">Select an account to begin investigation</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-export btn-export-csv" onclick="exportTxns('csv')" title="Export transactions as CSV">⬇ CSV</button>
+      <button class="btn-export btn-export-json" onclick="exportTxns('json')" title="Export transactions as JSON">⬇ JSON</button>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="txn-controls">
+    <span class="ctrl-label">Account</span>
+    <div class="acc-search-wrap" id="accSearchWrap">
+      <input type="text" id="txnAccSearch" class="acc-search-input" placeholder="Search name, FT code…" autocomplete="off"
+        oninput="accSearchInput(this)" onfocus="accSearchFocus()" onkeydown="accSearchKey(event)" />
+      <span class="acc-search-clear" id="accSearchClear" onclick="clearAccSearch()">✕</span>
+      <div class="acc-search-results" id="accSearchResults"></div>
+    </div>
+    <div id="accSelectedTag" style="display:none;"></div>
+    <!-- hidden value holder -->
+    <input type="hidden" id="txnAccountSel" value="" />
+    <div class="ctrl-divider"></div>
+    <span class="ctrl-label">Channel</span>
+    <select id="txnChannelFilter" onchange="loadTransactions()">
+      <option value="">All</option>
+      <option>UPI</option><option>NEFT</option><option>IMPS</option><option>RTGS</option><option>COUPON</option>
+    </select>
+    <span class="ctrl-label">Status</span>
+    <select id="txnStatusFilter" onchange="loadTransactions()">
+      <option value="">All</option>
+      <option value="completed">Completed</option>
+      <option value="pending">Pending</option>
+      <option value="flagged">Flagged</option>
+    </select>
+    <span class="ctrl-label">Sort</span>
+    <select id="txnSort" onchange="loadTransactions()">
+      <option value="date_desc">Newest First</option>
+      <option value="date_asc">Oldest First</option>
+      <option value="amount_desc">Highest Amount</option>
+      <option value="amount_asc">Lowest Amount</option>
+    </select>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="txn-summary-bar" id="txnSummaryBar">
+    <div class="txn-stat"><div class="txn-stat-lbl">Total Transactions</div><div class="txn-stat-val" id="txnStatTotal">—</div></div>
+    <div class="txn-stat"><div class="txn-stat-lbl">Total Volume</div><div class="txn-stat-val" id="txnStatVol">—</div></div>
+    <div class="txn-stat"><div class="txn-stat-lbl">Flagged</div><div class="txn-stat-val" id="txnStatFlagged" style="color:#E24B4A;">—</div></div>
+    <div class="txn-stat"><div class="txn-stat-lbl">Avg Fraud Score</div><div class="txn-stat-val" id="txnStatScore">—</div></div>
+    <div class="txn-stat"><div class="txn-stat-lbl">Channels</div><div class="txn-stat-val" id="txnStatChannels" style="font-size:12px;line-height:1.6;">—</div></div>
+  </div>
+
+  <!-- Transaction Table -->
+  <div class="txn-table-wrap">
+    <div class="txn-table-head">
+      <span style="font-size:13px;font-weight:600;color:#5f5e5a;">Transaction Log</span>
+      <span id="txnTableCount" style="font-size:12px;color:#aaa;"></span>
+    </div>
+    <div class="txn-table-scroll">
+      <table class="txn-tbl" id="txnTable">
+        <thead>
+          <tr>
+            <th>#</th><th>TXN ID</th><th>Date</th>
+            <th>Sender</th><th>Receiver</th>
+            <th>Amount</th><th>Channel</th><th>Status</th><th>Fraud Score</th>
+          </tr>
+        </thead>
+        <tbody id="txnTableBody">
+          <tr><td colspan="9" style="text-align:center;color:#aaa;padding:32px;">Select an account or load all transactions above</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Mini Relation Graph -->
+  <div class="mini-graph-section">
+    <div class="mini-graph-head">
+      <span style="font-size:13px;font-weight:600;color:#5f5e5a;">🔗 Counterparty Relations</span>
+      <span id="miniGraphHint" style="font-size:11px;color:#aaa;">Click a node to filter table • Arrows show money flow direction</span>
+    </div>
+    <div style="position:relative;">
+      <canvas id="miniGraphCanvas"></canvas>
+      <div class="mg-tooltip" id="mgTooltip"></div>
+    </div>
+  </div>
+
+  <!-- AI Question Panel -->
+  <div class="ai-qs-section">
+    <div class="ai-qs-title">🧠 Investigator Questions</div>
+    <div class="ai-qs-sub">Click any question to send it to the AI analyst. Account context is included automatically.</div>
+
+    <div class="qs-category">
+      <div class="qs-cat-name" onclick="toggleQsCat(this)">📊 Spending & Volume Patterns</div>
+      <div class="qs-chips">
+        <button class="qs-chip" onclick="sendQsToAI(this)">Has there been a sudden change in spending habits?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are large deposits followed by immediate withdrawals?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are transaction amounts just below reporting thresholds (structuring)?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are transactions unusually rounded or structured amounts?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Is money moving in and out rapidly without retention?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Is there a mismatch between income patterns and spending behavior?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are there unexplained or irregular large inflows of funds?</button>
+      </div>
+    </div>
+
+    <div class="qs-category">
+      <div class="qs-cat-name" onclick="toggleQsCat(this)">🔄 Fraud Patterns & Typologies</div>
+      <div class="qs-chips">
+        <button class="qs-chip" onclick="sendQsToAI(this)">Is there circular movement of money between accounts?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are transactions being split into smaller amounts to avoid detection?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Is there a layering pattern (A → B → C → D)?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Is there a repetitive pattern of credit followed immediately by debit?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are there repeated small-value transactions (possible testing behavior)?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are there sudden spikes in transaction amount or frequency?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are multiple transactions happening in a very short time frame?</button>
+      </div>
+    </div>
+
+    <div class="qs-category">
+      <div class="qs-cat-name" onclick="toggleQsCat(this)">👥 Counterparty & Network</div>
+      <div class="qs-chips">
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are funds being transferred to new or recently added beneficiaries?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are multiple new counterparties added in a short time?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are counterparties linked to previously flagged or suspicious accounts?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are there multiple accounts interacting frequently with this account?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are there repeated transfers to unknown or unverified accounts?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Is money being routed through multiple intermediary accounts?</button>
+      </div>
+    </div>
+
+    <div class="qs-category">
+      <div class="qs-cat-name" onclick="toggleQsCat(this)">⏰ Temporal & Behavioral</div>
+      <div class="qs-chips">
+        <button class="qs-chip" onclick="sendQsToAI(this)">Has the account suddenly become active after a long dormant period?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are transactions occurring at unusual hours (late night/early morning)?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Is there a burst of high activity in a very short time window?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Does the transaction behavior match the customer's historical pattern?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are transactions timed in a way that avoids monitoring cycles?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Are funds withdrawn quickly after multiple transfers arrive?</button>
+      </div>
+    </div>
+
+    <div class="qs-category">
+      <div class="qs-cat-name" onclick="toggleQsCat(this)">🚨 Risk Assessment & Action</div>
+      <div class="qs-chips">
+        <button class="qs-chip" onclick="sendQsToAI(this)">What is the overall fraud risk score for this account?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Does this pattern match known fraud cases or typologies?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Should the account be temporarily restricted or frozen?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Is manual investigation required?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Does the activity warrant flagging for further monitoring?</button>
+        <button class="qs-chip" onclick="sendQsToAI(this)">Generate a full forensic risk summary for this account.</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div><!-- /tab-transactions -->
+
+<!-- AI ANALYSIS TAB -->
+
+<div class="tab-content" id="tab-ai">
+<style>
+  /* ── AI Tab Styles ─────────────────────────────── */
+  .ai-layout { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  .ai-col { display:flex; flex-direction:column; gap:16px; }
+
+  /* Chat */
+  .chat-panel { background:#1a1a18; border-radius:12px; overflow:hidden; }
+  .chat-header { padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; gap:10px; }
+  .chat-avatar { width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,#E24B4A,#F09595); display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+  .chat-title { font-size:13px; font-weight:600; color:#fff; }
+  .chat-subtitle { font-size:11px; color:rgba(255,255,255,0.4); }
+  .chat-log { padding:14px; min-height:320px; max-height:380px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; }
+  .chat-log::-webkit-scrollbar { width:4px; } .chat-log::-webkit-scrollbar-track { background:transparent; } .chat-log::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:4px; }
+  .chat-bubble { max-width:88%; animation:bubbleIn 0.2s ease; }
+  @keyframes bubbleIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .bubble-user { align-self:flex-end; }
+  .bubble-user .bubble-inner { background:#378ADD; color:#fff; border-radius:14px 14px 3px 14px; padding:9px 13px; font-size:13px; line-height:1.5; }
+  .bubble-ai { align-self:flex-start; }
+  .bubble-ai .bubble-inner { background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.9); border-radius:14px 14px 14px 3px; padding:9px 13px; font-size:13px; line-height:1.6; border:1px solid rgba(255,255,255,0.08); }
+  .bubble-sys { align-self:center; }
+  .bubble-sys .bubble-inner { background:rgba(226,75,74,0.15); color:#F09595; border-radius:8px; padding:6px 12px; font-size:12px; border:1px solid rgba(226,75,74,0.25); }
+  .bubble-name { font-size:10px; color:rgba(255,255,255,0.35); margin-bottom:3px; padding:0 4px; }
+  .bubble-user .bubble-name { text-align:right; }
+  .chat-table { width:100%; border-collapse:collapse; font-size:11px; margin-top:6px; }
+  .chat-table th { background:rgba(255,255,255,0.12); color:rgba(255,255,255,0.6); padding:5px 8px; text-align:left; font-weight:500; }
+  .chat-table td { padding:4px 8px; border-bottom:1px solid rgba(255,255,255,0.06); color:rgba(255,255,255,0.85); }
+  .typing-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.5); display:inline-block; margin:0 2px; animation:typingPulse 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay:0.2s; } .typing-dot:nth-child(3) { animation-delay:0.4s; }
+  @keyframes typingPulse { 0%,80%,100%{transform:scale(0.7);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+  .chat-input-row { display:flex; gap:8px; padding:12px 14px; border-top:1px solid rgba(255,255,255,0.06); }
+  .chat-input-row input { flex:1; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; font-size:13px; color:#fff; font-family:inherit; outline:none; transition:border-color 0.15s; }
+  .chat-input-row input:focus { border-color:rgba(55,138,221,0.6); background:rgba(255,255,255,0.1); }
+  .chat-input-row input::placeholder { color:rgba(255,255,255,0.3); }
+  .btn-send { background:#378ADD; border:none; border-radius:8px; padding:8px 16px; color:#fff; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit; transition:background 0.15s; flex-shrink:0; }
+  .btn-send:hover { background:#2a6bb5; }
+
+  /* Quick queries */
+  .quick-queries { display:flex; flex-wrap:wrap; gap:6px; padding:10px 14px 12px; border-top:1px solid rgba(255,255,255,0.06); }
+  .quick-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:20px; padding:4px 11px; font-size:11px; color:rgba(255,255,255,0.6); cursor:pointer; transition:all 0.15s; font-family:inherit; }
+  .quick-btn:hover { background:rgba(55,138,221,0.25); border-color:rgba(55,138,221,0.5); color:#fff; }
+
+  /* Bubble action buttons (copy / edit) */
+  .bubble-actions { display:none; gap:4px; margin-top:4px; align-items:center; }
+  .bubble-user .bubble-actions { justify-content:flex-end; }
+  .bubble-ai .bubble-actions  { justify-content:flex-start; }
+  .chat-bubble:hover .bubble-actions { display:flex; }
+  .bubble-action-btn {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    color: rgba(255,255,255,0.45);
+    font-size: 11px;
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    display:flex; align-items:center; gap:3px;
+  }
+  .bubble-action-btn:hover { background:rgba(55,138,221,0.3); border-color:rgba(55,138,221,0.5); color:#fff; }
+  .bubble-action-btn.copied { background:rgba(40,167,69,0.3); border-color:rgba(40,167,69,0.5); color:#8af5aa; }
+  /* Make user bubble edit highlight */
+  .bubble-user .bubble-action-btn.edit-btn:hover { background:rgba(240,149,149,0.3); border-color:rgba(240,149,149,0.5); }
+
+
+  /* Analysis panel */
+  .analysis-config { background:#fff; border:0.5px solid rgba(0,0,0,0.12); border-radius:12px; padding:16px; }
+  .analysis-config .config-row { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px; }
+  .config-group { display:flex; flex-direction:column; gap:4px; }
+  .config-label { font-size:11px; color:#888; font-weight:500; }
+
+  .analysis-result { background:#fff; border:0.5px solid rgba(0,0,0,0.12); border-radius:12px; padding:16px; min-height:200px; }
+  .result-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; color:#bbb; gap:10px; }
+  .result-empty-icon { font-size:40px; opacity:0.4; }
+
+  /* Risk gauge */
+  .risk-gauge-wrap { display:flex; align-items:center; gap:16px; margin-bottom:16px; padding-bottom:16px; border-bottom:0.5px solid rgba(0,0,0,0.08); }
+  .gauge-svg { flex-shrink:0; }
+  .risk-meta h3 { font-size:15px; font-weight:600; margin:0 0 4px; }
+  .risk-meta .risk-lv { font-size:12px; font-weight:500; padding:3px 10px; border-radius:20px; display:inline-block; }
+  .risk-lv.high { background:#FCEBEB; color:#A32D2D; }
+  .risk-lv.medium { background:#FAEEDA; color:#854F0B; }
+  .risk-lv.low { background:#E1F5EE; color:#0F6E56; }
+  .patterns-row { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+  .pattern-badge { background:#f1efe8; border:0.5px solid rgba(0,0,0,0.12); border-radius:20px; padding:2px 10px; font-size:11px; color:#5f5e5a; font-weight:500; }
+
+  .narrative-block { font-size:13px; color:#5f5e5a; line-height:1.7; margin-bottom:14px; }
+  .evidence-list { display:flex; flex-direction:column; gap:6px; }
+  .evidence-item { padding:8px 12px; background:#f9f8f4; border-left:3px solid #E24B4A; border-radius:0 6px 6px 0; font-size:12px; color:#5f5e5a; }
+  .evidence-item.medium { border-color:#EF9F27; }
+  .evidence-item.low { border-color:#378ADD; }
+
+  .analyzing-spinner { display:flex; align-items:center; gap:10px; padding:30px; color:#888; font-size:13px; }
+</style>
+
+<div class="ai-layout">
+  <!-- ── LEFT: Chat ─────────────────────────────── -->
+  <div class="ai-col">
+    <div class="chat-panel">
+      <div class="chat-header">
+        <div class="chat-avatar">🤖</div>
+        <div>
+          <div class="chat-title">FraudSense AI</div>
+          <div class="chat-subtitle" id="chatSubtitle">Ask anything about accounts, transactions, or fraud patterns</div>
+        </div>
+        <div style="margin-left:auto; display:flex; gap:6px; align-items:center;">
+          <select id="aiBackend" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:4px 8px;font-size:11px;color:rgba(255,255,255,0.7);font-family:inherit;">
+            <option value="groq" selected>Groq</option>
+            <option value="ollama">Ollama</option>
+            <option value="gemini">Gemini</option>
+          </select>
+          <button class="quick-btn" onclick="checkAIHealth()" style="margin:0;">● Health</button>
+        </div>
+      </div>
+      <div class="chat-log" id="aiChatLog">
+        <div class="bubble-ai chat-bubble">
+          <div class="bubble-name">FraudSense</div>
+          <div class="bubble-inner">👋 Hello! I'm FraudSense, your AI fraud analyst. I can:<br>
+            • Query the database for transactions, accounts, alerts<br>
+            • Explain fraud patterns and risk indicators<br>
+            • Help you investigate specific accounts<br><br>
+            Try asking: <em>"Show me the first 5 transactions"</em> or <em>"List high-risk accounts"</em></div>
+        </div>
+      </div>
+      <div class="quick-queries">
+        <button class="quick-btn" onclick="quickQuery('Show me the first 5 transactions in the database with sender and receiver names')">📋 First 5 Txns</button>
+        <button class="quick-btn" onclick="quickQuery('List all fraud alerts with risk score above 70, show names and scores')">⚠️ High Risk Alerts</button>
+        <button class="quick-btn" onclick="quickQuery('Show dormant accounts — accounts with no transactions in the last 6 months')">💤 Dormant Accounts</button>
+        <button class="quick-btn" onclick="quickQuery('What are the top 10 accounts by current balance?')">💰 Top Balances</button>
+        <button class="quick-btn" onclick="quickQuery('Show the 10 most recent fraud alerts with alert type and status')">🚨 Recent Alerts</button>
+        <button class="quick-btn" onclick="quickQuery('How does circular transaction fraud work? Explain with a real example of how money flows.')">❓ Explain Circular Fraud</button>
+        <button class="quick-btn" onclick="quickQuery('Which transaction channels are most used? Show a breakdown by channel type and count.')">📡 Channel Breakdown</button>
+        <button class="quick-btn" onclick="quickQuery('Find accounts that have BOTH sent and received money to the same counterparty — possible circular flow indicators')">🔄 Circular Patterns</button>
+        <button class="quick-btn" onclick="quickQuery('Show the 10 biggest single transactions by amount in the database')">💸 Biggest Txns</button>
+        <button class="quick-btn" onclick="quickQuery('Show transactions where fraud_score is above 80 — list the sender, receiver, amount and fraud score')">🎯 High Fraud Score</button>
+        <button class="quick-btn" onclick="quickQuery('Are there any accounts with a suspicious number of small transactions just below a threshold? This might be structuring.')">🧩 Structuring Probe</button>
+        <button class="quick-btn" onclick="quickQuery('Show newly created accounts in the last 30 days with their balance and transaction count')">🆕 New Accounts</button>
+        <button class="quick-btn" onclick="quickQuery('What is the total money flow in and out of the system? Show total sent vs received.')">📊 System Flow</button>
+        <button class="quick-btn" onclick="quickQuery('Show any accounts that have been flagged multiple times in fraud alerts')">🔁 Repeat Flagged</button>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="aiChatInput" placeholder="Ask FraudSense anything..." onkeydown="if(event.key==='Enter')sendAIChat()">
+        <button class="btn-send" onclick="sendAIChat()">Send ↑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Analysis ─────────────────────────── -->
+  <div class="ai-col">
+    <div class="analysis-config">
+      <div style="font-size:12px; font-weight:600; color:#5f5e5a; text-transform:uppercase; letter-spacing:0.3px; margin-bottom:12px;">🔍 Deep Account Analysis</div>
+      <div class="config-row">
+        <div class="config-group">
+          <div class="config-label">Alert ID</div>
+          <input type="text" id="aiAlertId" class="form-input" placeholder="ALT-0001" style="width:120px;">
+        </div>
+        <div class="config-group">
+          <div class="config-label">Account Code</div>
+          <input type="text" id="aiEntityCode" class="form-input" placeholder="FT-XXXXXX" style="width:140px;">
+        </div>
+        <div class="config-group">
+          <div class="config-label">Pattern</div>
+          <select id="aiPattern" class="form-input" style="width:auto;">
+            <option value="">Auto-detect</option>
+            <option value="circular">Circular</option>
+            <option value="layering">Layering</option>
+            <option value="structuring">Structuring</option>
+            <option value="dormant">Dormant</option>
+            <option value="profile_mismatch">Profile mismatch</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-sm btn-primary" onclick="runAIAnalysis()" id="analyzeBtn" style="flex:1;">🔬 Forensic Dive</button>
+        <div class="config-group" style="flex-shrink:0;">
+          <input type="text" id="aiModel" class="form-input" placeholder="Model override (optional)" style="width:220px; font-size:12px;">
+        </div>
+      </div>
+
+    </div>
+
+    <div class="analysis-result" id="aiResult">
+      <div class="result-empty">
+        <div class="result-empty-icon">🔬</div>
+        <div style="font-size:13px; color:#bbb;">Enter an Alert ID or Account Code above and click <strong>Run Deep Analysis</strong></div>
+        <div style="font-size:11px; color:#ccc; margin-top:4px;">The AI will autonomously query the database, analyze transaction patterns, and produce a detailed risk report</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- OVERVIEW TAB -->
+<div class="tab-content active" id="tab-overview">
+  <div class="metrics-grid" id="metricsGrid">
+    <div class="metric"><div class="metric-lbl">Total Accounts</div><div class="metric-val" id="mAccounts">—</div></div>
+    <div class="metric"><div class="metric-lbl">Total Transactions</div><div class="metric-val" id="mTxns">—</div></div>
+    <div class="metric"><div class="metric-lbl">Total Volume</div><div class="metric-val" id="mVolume">—</div></div>
+    <div class="metric"><div class="metric-lbl">Open Fraud Alerts</div><div class="metric-val" id="mAlerts" style="color:#A32D2D;">—</div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">⚠ Live Fraud Alerts</div>
+      <div class="alert-feed" id="alertFeed">
+        <div style="text-align:center; padding:20px; color:#888;"><span class="spinner"></span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">📡 Live Transaction Feed</div>
+      <div class="live-txn-feed" id="liveTxnFeed">
+        <div style="text-align:center; padding:20px; color:#888; font-size:13px;">Waiting for transactions...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Recent Transactions</div>
+    <div style="overflow-x:auto;">
+      <table class="data-table" id="recentTxnsTable">
+        <thead><tr><th>Txn ID</th><th>From</th><th>To</th><th>Amount</th><th>Channel</th><th>Time</th><th>Fraud</th></tr></thead>
+        <tbody id="recentTxnBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- GRAPH EXPLORER TAB -->
+<div class="tab-content" id="tab-graph">
+  <div class="graph-section">
+    <div class="graph-toolbar">
+      <div>
+        <div style="font-size:14px; font-weight:500;" id="graphTitle">Fund Flow Graph Explorer</div>
+        <div style="font-size:12px; color:#888;" id="graphSub">Enter an account ID or select from Accounts tab</div>
+      </div>
+      <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+        <input type="text" id="graphUserId" class="form-input" placeholder="User ID..." style="width:100px; padding:5px 8px; font-size:12px;">
+        <select id="graphDepth" class="form-input" style="padding:5px 8px; font-size:12px; width:auto;">
+          <option value="2">2 hops</option>
+          <option value="3">3 hops</option>
+        </select>
+        <button class="btn btn-sm" onclick="loadGraph()">Load graph</button>
+        <button class="btn btn-sm" onclick="resetGraphView()">Reset view</button>
+        <button class="btn btn-sm" id="traceBtn" onclick="toggleTrace()">Trace suspicious</button>
+      </div>
+    </div>
+    <div class="graph-canvas-wrap">
+      <canvas id="graphCanvas"></canvas>
+      <div class="tooltip" id="graphTooltip">
+        <div style="font-size:13px; font-weight:500; margin-bottom:6px;" id="ttName">—</div>
+        <div style="font-size:12px; color:#888; margin-bottom:2px;" id="ttCode">—</div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; padding:2px 0;"><span style="color:#888;">Balance</span><span id="ttBal">—</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; padding:2px 0;"><span style="color:#888;">Status</span><span id="ttStatus">—</span></div>
+        <div style="display:flex; justify-content:space-between; font-size:12px; padding:2px 0;"><span style="color:#888;">Risk score</span><span id="ttRisk" style="font-weight:500;">—</span></div>
+        <div style="margin-top:6px; padding-top:6px; border-top:0.5px solid rgba(0,0,0,0.1); font-size:11px; color:#aaa;">Click to view account</div>
+      </div>
+      <div class="legend">
+        <div class="legend-row"><span class="risk-dot" style="background:#E24B4A;"></span>High risk</div>
+        <div class="legend-row"><span class="risk-dot" style="background:#EF9F27;"></span>Medium risk</div>
+        <div class="legend-row"><span class="risk-dot" style="background:#378ADD;"></span>Normal</div>
+        <div class="legend-row"><span class="risk-dot" style="background:#888;"></span>Dormant/frozen</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACCOUNTS TAB -->
+<div class="tab-content" id="tab-accounts">
+  <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+    <input type="text" id="accSearch" class="form-input" placeholder="Search name, ID, account..." style="max-width:260px;" oninput="filterAccounts()">
+    <select id="accStatusFilter" class="form-input" style="width:auto;" onchange="filterAccounts()">
+      <option value="">All statuses</option>
+      <option value="active">Active</option>
+      <option value="frozen">Frozen</option>
+      <option value="dormant">Dormant</option>
+    </select>
+    <button class="btn btn-sm" onclick="loadAccounts()">Refresh</button>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>ID</th><th>Name</th><th>Account No.</th><th>Branch</th><th>Balance</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+      <tbody id="accountsBody"></tbody>
+    </table>
+  </div>
+  <div style="margin-top:12px; font-size:13px; color:#888;" id="accCount">—</div>
+</div>
+
+<!-- FRAUD ALERTS TAB -->
+<div class="tab-content" id="tab-alerts">
+  <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+    <select id="alertStatusFilter" class="form-input" style="width:auto;" onchange="loadAlerts()">
+      <option value="">All statuses</option>
+      <option value="open">Open</option>
+      <option value="reviewing">Reviewing</option>
+      <option value="filed">Filed</option>
+      <option value="closed">Closed</option>
+    </select>
+    <button class="btn btn-sm" onclick="loadAlerts()">Refresh</button>
+    <button class="btn btn-sm btn-primary" onclick="switchTab('report', null)">Generate FIU Report ↗</button>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="data-table">
+      <thead><tr><th>Alert ID</th><th>Subject</th><th>Pattern</th><th>Risk Score</th><th>Amount</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody id="alertsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- COUPONS TAB -->
+<div class="tab-content" id="tab-coupons">
+  <div class="panel" style="margin-bottom:16px;">
+    <div class="panel-title">Create Coupon</div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <input type="text" id="couponName" class="form-input" placeholder="Name" style="max-width:240px;">
+      <input type="text" id="couponDesc" class="form-input" placeholder="Description (short)" style="max-width:300px;">
+      <select id="couponAmount" class="form-input" style="width:auto;">
+        <option value="10000">₹10,000</option>
+        <option value="25000">₹25,000</option>
+        <option value="50000">₹50,000</option>
+        <option value="100000">₹1,00,000</option>
+        <option value="125000">₹1,25,000</option>
+        <option value="500000">₹5,00,000</option>
+        <option value="1000000">₹10,00,000</option>
+      </select>
+      <button class="btn btn-sm btn-primary" onclick="createCoupon()">Create</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Coupons</div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>Code</th><th>Name</th><th>Description</th><th>Amount</th><th>Status</th><th>Created</th><th>Created By</th><th>Redeemed By</th><th>Redeemed At</th></tr></thead>
+        <tbody id="couponsBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div style="margin-top:12px; font-size:13px; color:#888;" id="couponCount">—</div>
+  <div style="margin-top:12px;">
+    <button class="btn btn-sm" onclick="loadCoupons()">Refresh</button>
+  </div>
+  <div style="margin-top:8px; font-size:12px; color:#888;">
+    Status: new = available, redeemed = used, expired = invalidated
+  </div>
+</div>
+<script src="/client/js/api.js"></script>
+<script>
+let currentOfficer = null;
+let allAccounts = [];
+let graphNodes = [], graphEdges = [];
+let pan = {x:0,y:0}, dragging = false, lastMouse = null, hoveredNode = null, traceMode = false;
+let canvasW = 0, canvasH = 0;
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+async function init() {
+  currentOfficer = await requireOfficerLogin();
+  if (!currentOfficer) return;
+  document.getElementById('officerName').textContent = currentOfficer.full_name;
+  loadStats();
+  loadAlerts();
+  loadAccounts();
+
+  initSocket({
+    onFraudAlert: (data) => {
+      showToast(`⚠ New fraud alert: ${data.alert_id} (score: ${data.risk_score})`, 'error', 8000);
+      loadAlerts();
+      loadStats();
+      prependAlertFeed(data);
+    },
+    onNewTransaction: (data) => {
+      prependLiveTxn(data);
+      loadStats();
+    }
+  });
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.officer-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (tab === 'graph') setTimeout(renderGraph, 50);
+  if (tab === 'coupons') loadCoupons();
+}
+
+// ─── STATS ────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const s = await api.get('/fraud/stats');
+    document.getElementById('mAccounts').textContent = s.total_accounts;
+    document.getElementById('mTxns').textContent = s.total_transactions.toLocaleString();
+    document.getElementById('mVolume').textContent = '₹' + (s.total_volume / 10000000).toFixed(1) + 'Cr';
+    document.getElementById('mAlerts').textContent = s.high_risk_open;
+
+    // Recent txns
+    document.getElementById('recentTxnBody').innerHTML = (s.recent_transactions || []).map(t => `
+      <tr>
+        <td class="font-mono">${t.txn_id}</td>
+        <td>${t.sender_name || '—'}</td>
+        <td>${t.receiver_name || '—'}</td>
+        <td style="font-weight:500;">₹${parseFloat(t.amount).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+        <td>${t.channel}</td>
+        <td>${timeAgo(t.created_at)}</td>
+        <td>${t.flagged ? '<span class="badge badge-danger">⚠ Flagged</span>' : '<span class="badge badge-success">Clean</span>'}</td>
+      </tr>`).join('');
+  } catch (e) { console.error(e); }
+}
+
+// ─── ALERT FEED ──────────────────────────────────────────────────────────────
+async function loadAlerts() {
+  try {
+    const status = document.getElementById('alertStatusFilter')?.value || '';
+    const { alerts } = await api.get('/fraud/alerts?limit=50' + (status ? '&status=' + status : ''));
+
+    // Overview feed
+    document.getElementById('alertFeed').innerHTML = alerts.slice(0, 10).map(a => {
+      const desc = tryParseDesc(a.description);
+      const riskClass = a.risk_score >= 70 ? 'feed-high' : a.risk_score >= 50 ? 'feed-medium' : 'feed-low';
+      return `<div class="feed-item ${riskClass}" onclick="viewAlertDetail('${a.alert_id}')">
+        <div class="feed-header">
+          <span class="feed-id">${a.alert_id}</span>
+          <span class="feed-score">${Math.round(a.risk_score)}/100</span>
+        </div>
+        <div class="feed-desc">${a.subject_name || 'Unknown'} · ${formatPattern(a.pattern_type)} · ${a.txn_id || '—'}</div>
+        <div class="feed-time">${timeAgo(a.created_at)}</div>
+      </div>`;
+    }).join('') || '<div style="text-align:center;padding:20px;font-size:13px;color:#888;">No alerts</div>';
+
+    // Full table
+    if (document.getElementById('alertsBody')) {
+      document.getElementById('alertsBody').innerHTML = alerts.map(a => `
+        <tr>
+          <td class="font-mono" style="font-size:12px;">${a.alert_id}</td>
+          <td>${a.subject_name || '—'} <div style="font-size:11px;color:#888;">${a.unique_code || ''}</div></td>
+          <td><span class="badge ${a.risk_score >= 70 ? 'badge-danger' : 'badge-warn'}">${formatPattern(a.pattern_type)}</span></td>
+          <td style="font-weight:600; color:${a.risk_score >= 70 ? '#A32D2D' : '#854F0B'};">${Math.round(a.risk_score)}</td>
+          <td>${a.amount ? '₹' + parseFloat(a.amount).toLocaleString('en-IN') : '—'}</td>
+          <td><span class="badge badge-${statusColor(a.status)}">${a.status}</span></td>
+          <td style="font-size:11px;">${formatDate(a.created_at)}</td>
+          <td>
+            <select style="font-size:11px;padding:3px 6px;border:0.5px solid #ddd;border-radius:4px;" onchange="updateAlertStatus('${a.alert_id}',this.value)">
+              <option ${a.status==='open'?'selected':''} value="open">Open</option>
+              <option ${a.status==='reviewing'?'selected':''} value="reviewing">Reviewing</option>
+              <option ${a.status==='filed'?'selected':''} value="filed">Filed</option>
+              <option ${a.status==='closed'?'selected':''} value="closed">Closed</option>
+            </select>
+            <button class="btn btn-sm" style="margin-left:4px;font-size:11px;" onclick="loadGraphForUser(${a.user_id})">Graph</button>
+          </td>
+        </tr>`).join('');
+    }
+  } catch (e) { console.error(e); }
+}
+
+function prependAlertFeed(data) {
+  const feed = document.getElementById('alertFeed');
+  const div = document.createElement('div');
+  div.className = 'feed-item feed-high';
+  div.innerHTML = `<div class="feed-header"><span class="feed-id">${data.alert_id}</span><span class="feed-score">${data.risk_score}/100</span></div>
+    <div class="feed-desc">${data.sender_name} → ${data.receiver_name} · ₹${parseFloat(data.amount).toLocaleString('en-IN')} · ${formatPattern(data.pattern)}</div>
+    <div class="feed-time">just now</div>`;
+  feed.insertBefore(div, feed.firstChild);
+}
+
+function prependLiveTxn(data) {
+  const feed = document.getElementById('liveTxnFeed');
+  feed.innerHTML = `<div class="live-txn new">${data.from_name} → ${data.to_name} <span style="margin-left:auto;font-weight:500;">₹${parseFloat(data.amount).toLocaleString('en-IN')}</span></div>` + feed.innerHTML;
+}
+
+async function updateAlertStatus(alertId, status) {
+  try {
+    await api.patch('/fraud/alerts/' + alertId, { status });
+    showToast('Alert status updated', 'success');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+function viewAlertDetail(alertId) {
+  // Switch to alerts tab and show detail
+  switchTab('alerts', document.querySelectorAll('.officer-tab')[3]);
+}
+
+// ─── ACCOUNTS ────────────────────────────────────────────────────────────────
+async function loadAccounts() {
+  try {
+    const { accounts, total } = await api.get('/fraud/accounts?limit=200');
+    allAccounts = accounts;
+    document.getElementById('accCount').textContent = `${total} accounts total`;
+    filterAccounts();
+  } catch (e) { console.error(e); }
+}
+
+function filterAccounts() {
+  const search = (document.getElementById('accSearch')?.value || '').toLowerCase();
+  const status = document.getElementById('accStatusFilter')?.value || '';
+  const filtered = allAccounts.filter(a => {
+    if (status && a.status !== status) return false;
+    if (search && !a.full_name.toLowerCase().includes(search) && !a.unique_code.toLowerCase().includes(search) && !a.account_number.toLowerCase().includes(search)) return false;
+    return true;
+  });
+  document.getElementById('accountsBody').innerHTML = filtered.map(a => `
+    <tr>
+      <td style="font-size:12px;color:#888;">${a.id}</td>
+      <td>
+        <div style="font-weight:500;">${a.full_name}</div>
+        <div style="font-size:11px;color:#888;">${a.unique_code}</div>
+      </td>
+      <td class="font-mono" style="font-size:12px;">${a.account_number}</td>
+      <td style="font-size:12px;">${a.branch}</td>
+      <td style="font-weight:500;">₹${parseFloat(a.balance).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+      <td><span class="status-${a.status}">${a.status}</span></td>
+      <td style="font-size:11px; color:#888;">${formatDate(a.created_at)}</td>
+      <td style="display:flex; gap:4px;">
+        <button class="btn btn-sm" style="font-size:11px;" onclick="loadGraphForUser(${a.id})">Graph</button>
+        ${a.status !== 'frozen' ? `<button class="btn btn-sm" style="font-size:11px; color:#A32D2D;" onclick="freezeAccount(${a.id})">Freeze</button>` : `<button class="btn btn-sm" style="font-size:11px; color:#0F6E56;" onclick="unfreezeAccount(${a.id})">Unfreeze</button>`}
+      </td>
+    </tr>`).join('');
+}
+
+async function freezeAccount(userId) {
+  if (!confirm('Freeze this account?')) return;
+  try {
+    await api.post('/fraud/freeze/' + userId, { reason: 'Fraud investigation' });
+    showToast('Account frozen', 'success');
+    loadAccounts();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function unfreezeAccount(userId) {
+  try {
+    await api.post('/fraud/unfreeze/' + userId);
+    showToast('Account unfrozen', 'success');
+    loadAccounts();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ─── GRAPH EXPLORER ──────────────────────────────────────────────────────────
+function loadGraphForUser(userId) {
+  document.getElementById('graphUserId').value = userId;
+  switchTab('graph', document.querySelectorAll('.officer-tab')[1]);
+  setTimeout(loadGraph, 100);
+}
+
+async function loadGraph() {
+  const userId = document.getElementById('graphUserId').value.trim();
+  const depth = document.getElementById('graphDepth').value;
+  if (!userId) { showToast('Enter a user ID', 'error'); return; }
+  try {
+    const data = await api.get(`/fraud/graph/${userId}?depth=${depth}`);
+    graphNodes = data.nodes;
+    graphEdges = data.edges;
+    pan = {x:0,y:0};
+    const user = graphNodes.find(n => n.id == userId);
+    document.getElementById('graphTitle').textContent = `Fund Flow — ${user ? user.name : 'User ' + userId}`;
+    document.getElementById('graphSub').textContent = `${graphNodes.length} accounts · ${graphEdges.length} connections`;
+    layoutGraph();
+    renderGraph();
+    showToast(`Graph loaded: ${graphNodes.length} nodes`, 'success');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+function layoutGraph() {
+  // Simple force-like layout: focus node in center, others in rings
+  const userId = parseInt(document.getElementById('graphUserId').value);
+  const center = graphNodes.find(n => n.id === userId) || graphNodes[0];
+  if (!center) return;
+  center.x = 0.5; center.y = 0.5;
+  const others = graphNodes.filter(n => n.id !== (center && center.id));
+  others.forEach((n, i) => {
+    const angle = (i / others.length) * 2 * Math.PI;
+    const radius = 0.35;
+    n.x = 0.5 + Math.cos(angle) * radius;
+    n.y = 0.5 + Math.sin(angle) * radius * 0.8;
+  });
+}
+
+function renderGraph() {
+  const canvas = document.getElementById('graphCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const wrap = canvas.parentElement;
+  canvas.width = wrap.clientWidth; canvas.height = wrap.clientHeight;
+  canvasW = canvas.width; canvasH = canvas.height;
+  ctx.clearRect(0,0,canvasW,canvasH);
+  ctx.strokeStyle='rgba(0,0,0,0.03)'; ctx.lineWidth=1;
+  for(let x=0;x<canvasW;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvasH);ctx.stroke();}
+  for(let y=0;y<canvasH;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvasW,y);ctx.stroke();}
+  if (!graphNodes.length) {
+    ctx.fillStyle='#888'; ctx.font='14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('No graph loaded. Enter a User ID and click "Load graph"', canvasW/2, canvasH/2);
+    return;
+  }
+  const nodes = graphNodes.map(n => ({ ...n, cx: n.x*(canvasW-120)+60+pan.x, cy: n.y*(canvasH-80)+40+pan.y }));
+  graphEdges.forEach(e => {
+    const fn = nodes.find(n=>n.id===e.from), tn = nodes.find(n=>n.id===e.to);
+    if (!fn||!tn) return;
+    const dx=tn.cx-fn.cx, dy=tn.cy-fn.cy, len=Math.sqrt(dx*dx+dy*dy)+0.001, r=22;
+    const sx=fn.cx+dx/len*r, sy=fn.cy+dy/len*r, ex=tn.cx-dx/len*r, ey=tn.cy-dy/len*r;
+    const mx=(sx+ex)/2-dy*0.12, my=(sy+ey)/2+dx*0.12;
+    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.quadraticCurveTo(mx,my,ex,ey);
+    ctx.lineWidth=e.suspicious?2:1; ctx.strokeStyle=e.suspicious?'#E24B4A':'#B4B2A9';
+    ctx.globalAlpha=traceMode?(e.suspicious?1:0.15):1; ctx.stroke();
+    const angle=Math.atan2(ey-my,ex-mx);
+    ctx.beginPath(); ctx.moveTo(ex,ey);
+    ctx.lineTo(ex-10*Math.cos(angle-.4),ey-10*Math.sin(angle-.4));
+    ctx.lineTo(ex-10*Math.cos(angle+.4),ey-10*Math.sin(angle+.4));
+    ctx.closePath(); ctx.fillStyle=e.suspicious?'#E24B4A':'#B4B2A9'; ctx.fill(); ctx.globalAlpha=1;
+    ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('₹'+formatShort(e.amount),mx,my-5);
+  });
+  nodes.forEach(n => {
+    const isHov = hoveredNode===n.id, r=isHov?26:22;
+    const color = n.risk_score>=70?'#E24B4A': n.risk_score>=50?'#EF9F27': (n.status==='frozen'||n.status==='dormant')?'#888':'#378ADD';
+    ctx.beginPath(); ctx.arc(n.cx,n.cy,r,0,Math.PI*2); ctx.fillStyle=color+'22'; ctx.fill();
+    ctx.strokeStyle=color; ctx.lineWidth=isHov?2.5:1.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(n.cx,n.cy,r-4,0,Math.PI*2); ctx.fillStyle=color+'44'; ctx.fill();
+    // Primary label = full name; secondary = unique code
+    const displayName = n.name || n.label || ('User '+n.id);
+    const displayCode = n.label && n.name && n.label !== n.name ? n.label : null;
+    ctx.fillStyle='#1a1a18'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(displayName, n.cx, n.cy+r+14);
+    if (displayCode) {
+      ctx.font='9px monospace'; ctx.fillStyle='#888';
+      ctx.fillText(displayCode, n.cx, n.cy+r+25);
+    }
+  });
+}
+
+function formatShort(v) {
+  if (!v) return '0';
+  if (v >= 10000000) return (v/10000000).toFixed(1)+'Cr';
+  if (v >= 100000) return (v/100000).toFixed(1)+'L';
+  if (v >= 1000) return (v/1000).toFixed(0)+'K';
+  return Math.round(v).toString();
+}
+
+function toggleTrace() {
+  traceMode = !traceMode;
+  document.getElementById('traceBtn').classList.toggle('btn-primary', traceMode);
+  renderGraph();
+}
+
+function resetGraphView() { pan={x:0,y:0}; traceMode=false; renderGraph(); }
+
+// Canvas interactions
+const gCanvas = document.getElementById('graphCanvas');
+gCanvas.addEventListener('mousemove', e => {
+  const rect = gCanvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  if (dragging&&lastMouse) { pan.x+=mx-lastMouse.x; pan.y+=my-lastMouse.y; lastMouse={x:mx,y:my}; renderGraph(); return; }
+  const node = getNodeAt(mx,my);
+  hoveredNode = node?node.id:null;
+  if (node) {
+    const tt = document.getElementById('graphTooltip');
+    tt.classList.add('visible');
+    tt.style.left=(mx+20)+'px'; tt.style.top=(my-10)+'px';
+    document.getElementById('ttName').textContent=node.name||'—';
+    document.getElementById('ttCode').textContent=node.label||'—';
+    document.getElementById('ttBal').textContent='₹'+(parseFloat(node.balance)||0).toLocaleString('en-IN',{minimumFractionDigits:2});
+    document.getElementById('ttStatus').textContent=node.status||'—';
+    const riskEl = document.getElementById('ttRisk');
+    riskEl.textContent=(node.risk_score||0)+'/100';
+    riskEl.style.color=node.risk_score>=70?'#A32D2D':node.risk_score>=50?'#854F0B':'#185FA5';
+    gCanvas.style.cursor='pointer';
+  } else {
+    document.getElementById('graphTooltip').classList.remove('visible');
+    gCanvas.style.cursor=dragging?'grabbing':'grab';
+  }
+  renderGraph();
+});
+gCanvas.addEventListener('mousedown', e => { dragging=true; const r=gCanvas.getBoundingClientRect(); lastMouse={x:e.clientX-r.left,y:e.clientY-r.top}; });
+gCanvas.addEventListener('mouseup', () => { dragging=false; lastMouse=null; });
+gCanvas.addEventListener('mouseleave', () => { dragging=false; document.getElementById('graphTooltip').classList.remove('visible'); hoveredNode=null; renderGraph(); });
+
+function getNodeAt(mx,my) {
+  if (!graphNodes.length) return null;
+  for (const n of graphNodes) {
+    const cx=n.x*(canvasW-120)+60+pan.x, cy=n.y*(canvasH-80)+40+pan.y;
+    if (Math.sqrt((mx-cx)**2+(my-cy)**2)<28) return{...n,cx,cy};
+  }
+  return null;
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function formatPattern(p) {
+  const map = {circular:'Circular',layering:'Layering',structuring:'Structuring',dormant:'Dormant activation',profile_mismatch:'Profile mismatch'};
+  return map[p]||p;
+}
+function statusColor(s) {
+  const map = {open:'danger',reviewing:'warn',filed:'info',closed:'neutral'};
+  return map[s]||'neutral';
+}
+function tryParseDesc(d) {
+  try { return JSON.parse(d); } catch(e) { return d; }
+}
+
+async function checkAIHealth() {
+  try {
+    const data = await api.get('/ai/health');
+    showToast('Agent online', 'success');
+    document.getElementById('aiResult').innerHTML = `<div style="font-size:12px;color:#888;">Agent: ${JSON.stringify(data.agent)}</div>`;
+  } catch (e) { showToast('Agent not reachable', 'error'); }
+}
+
+async function runAIAnalysis() {
+  const alertId = (document.getElementById('aiAlertId')?.value || '').trim();
+  const entityCode = (document.getElementById('aiEntityCode')?.value || '').trim();
+  const pattern = (document.getElementById('aiPattern')?.value || '').trim() || null;
+  const backend = (document.getElementById('aiBackend')?.value || '').trim() || null;
+  const model = (document.getElementById('aiModel')?.value || '').trim() || null;
+  if (!alertId && !entityCode) { showToast('Enter Alert ID or Account Code', 'error'); return; }
+  try {
+    const task = alertId ? `Analyze fraud alert ${alertId}` : `Analyze account ${entityCode} for suspicious fund flow`;
+    const body = { task, alert_id: alertId || null, entity_code: entityCode || null, pattern, backend, model };
+    const data = await api.post('/ai/analyze', body);
+    const ans = data.final_answer || {};
+    const patt = (ans.patterns_detected || []).join(', ') || '—';
+    document.getElementById('aiResult').innerHTML = `
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div class="metric"><div class="metric-lbl">Risk Score</div><div class="metric-val">${ans.risk_score ?? '—'}</div></div>
+        <div class="metric"><div class="metric-lbl">Recommendation</div><div class="metric-val" style="font-size:16px;">${ans.recommendation || '—'}</div></div>
+        <div class="metric"><div class="metric-lbl">Patterns</div><div class="metric-val" style="font-size:14px;">${patt}</div></div>
+      </div>
+      <div style="margin-top:12px; font-size:13px; color:#5f5e5a;">
+        <div style="font-weight:600; margin-bottom:6px;">Reasoning</div>
+        <div>${(ans.reasoning || '').replace(/\n/g,'<br>')}</div>
+      </div>
+    `;
+    showToast('AI analysis complete', 'success');
+  } catch (e) {
+    showToast(e.message || 'AI analysis failed', 'error');
+  }
+}
+
+
+// ─── AI CHAT ─────────────────────────────────────────────────────────────────
+
+// Each message: { id, role: 'user'|'assistant', content, domId }
+let aiChatMessages = [];
+let _msgCounter = 0;
+
+function getAIBackend() { return (document.getElementById('aiBackend')?.value || 'groq'); }
+function getAIModel()   { return (document.getElementById('aiModel')?.value || '').trim() || null; }
+function getEntityCode(){ return (document.getElementById('aiEntityCode')?.value || '').trim() || null; }
+
+// ── Copy helper ──────────────────────────────────────────────────────────────
+function copyBubble(rawText, btn) {
+  navigator.clipboard.writeText(rawText).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 1800);
+  }).catch(() => {
+    // Safari fallback
+    const ta = document.createElement('textarea');
+    ta.value = rawText;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    btn.textContent = '✓ Copied'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Copy'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+// ── Edit helper (branches conversation from that message) ────────────────────
+function editUserMessage(msgId) {
+  const idx = aiChatMessages.findIndex(m => m.id === msgId);
+  if (idx === -1) return;
+  const original = aiChatMessages[idx].content;
+
+  // Remove all messages from this point onward from state
+  const removed = aiChatMessages.splice(idx);
+
+  // Remove their bubbles from the DOM
+  removed.forEach(m => {
+    if (m.domId) { const el = document.getElementById(m.domId); if (el) el.remove(); }
+  });
+
+  // Populate the input with the original text
+  const inp = document.getElementById('aiChatInput');
+  if (inp) { inp.value = original; inp.focus(); }
+}
+
+// ── Append a bubble ──────────────────────────────────────────────────────────
+function appendBubble(type, text, msgId) {
+  const log   = document.getElementById('aiChatLog');
+  const domId = 'bubble-' + (msgId || Date.now() + Math.random().toString(36).slice(2));
+  const wrap  = document.createElement('div');
+  wrap.id          = domId;
+  wrap.className   = `chat-bubble bubble-${type}`;
+  const name  = type === 'user' ? 'You' : type === 'ai' ? 'FraudSense' : '';
+  const inner = formatChatText(text);
+  const isUser = type === 'user';
+  const isAI   = type === 'ai';
+
+  // Build action buttons
+  let actions = '';
+  if (isUser || isAI) {
+    const editBtn = isUser
+      ? `<button class="bubble-action-btn edit-btn" onclick="editUserMessage('${msgId}')">✏️ Edit</button>` : '';
+    actions = `<div class="bubble-actions">
+      <button class="bubble-action-btn" onclick="copyBubble(this.dataset.raw, this)"
+        data-raw="${text.replace(/"/g,'&quot;')}">📋 Copy</button>
+      ${editBtn}
+    </div>`;
+  }
+
+  wrap.innerHTML =
+    (name ? `<div class="bubble-name">${name}</div>` : '') +
+    `<div class="bubble-inner">${inner}</div>` +
+    actions;
+
+  log.appendChild(wrap);
+  log.scrollTop = log.scrollHeight;
+  return domId;
+}
+
+function appendTyping() {
+  const log = document.getElementById('aiChatLog');
+  const id  = 'typing-' + Date.now();
+  const wrap = document.createElement('div');
+  wrap.id        = id;
+  wrap.className = 'chat-bubble bubble-ai';
+  wrap.innerHTML = `<div class="bubble-name">FraudSense</div>
+    <div class="bubble-inner" style="padding:10px 16px;">
+      <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+    </div>`;
+  log.appendChild(wrap);
+  log.scrollTop = log.scrollHeight;
+  return id;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+// ── Full markdown formatter ──────────────────────────────────────────────────
+function formatChatText(text) {
+  // Raw-text tables from CSV DB results
+  if (text.includes('[DATABASE RESULTS')) {
+    const marker = text.indexOf('[DATABASE RESULTS');
+    const pre     = text.slice(0, marker).trim();
+    const csvPart = text.slice(text.indexOf('\n', marker) + 1);
+    const tableHtml = csvToHtmlTable(csvPart);
+    return (pre ? `<div style="margin-bottom:8px;">${mdInline(escHtml(pre))}</div>` : '') + tableHtml;
+  }
+
+  // Full markdown pipeline
+  const lines = text.split('\n');
+  let html = '';
+  let inCode = false;
+  let codeLang = '';
+  let codeLines = [];
+  let inTable = false;
+  let tableLines = [];
+
+  const flushTable = () => {
+    if (!tableLines.length) return;
+    const rows = tableLines.filter(l => l.trim() && !l.match(/^[\s|:-]+$/));
+    if (rows.length > 0) {
+      const cols = rows[0].split('|').map(c=>c.trim()).filter(Boolean);
+      html += `<table class="chat-table"><thead><tr>${cols.map(c=>`<th>${escHtml(c)}</th>`).join('')}</tr></thead><tbody>`;
+      rows.slice(1).forEach(row => {
+        const cells = row.split('|').map(c=>c.trim()).filter(Boolean);
+        html += `<tr>${cells.map(c=>`<td>${mdInline(escHtml(c))}</td>`).join('')}</tr>`;
+      });
+      html += `</tbody></table>`;
+    }
+    tableLines = []; inTable = false;
+  };
+
+  lines.forEach((line, i) => {
+    // Code fences
+    if (line.startsWith('```')) {
+      if (inCode) {
+        html += `<pre style="background:rgba(0,0,0,0.4);border-radius:6px;padding:10px 12px;font-size:11px;overflow-x:auto;margin:6px 0;"><code>${escHtml(codeLines.join('\n'))}</code></pre>`;
+        codeLines = []; inCode = false; codeLang = '';
+      } else {
+        if (inTable) flushTable();
+        inCode = true; codeLang = line.slice(3).trim();
+      }
+      return;
+    }
+    if (inCode) { codeLines.push(line); return; }
+
+    // Pipe tables
+    if (line.includes('|') && line.trim().startsWith('|')) {
+      inTable = true; tableLines.push(line); return;
+    } else if (inTable) { flushTable(); }
+
+    // Headings
+    if (line.startsWith('### '))      { html += `<div style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.95);margin:10px 0 4px">${mdInline(escHtml(line.slice(4)))}</div>`; return; }
+    if (line.startsWith('## '))       { html += `<div style="font-size:14px;font-weight:700;color:#fff;margin:12px 0 5px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:4px">${mdInline(escHtml(line.slice(3)))}</div>`; return; }
+    if (line.startsWith('# '))        { html += `<div style="font-size:15px;font-weight:700;color:#fff;margin:14px 0 6px">${mdInline(escHtml(line.slice(2)))}</div>`; return; }
+    // HR
+    if (line.match(/^[-*_]{3,}$/))   { html += `<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:8px 0">`; return; }
+    // Unordered list
+    if (line.match(/^[\s]*[-*+] /))  { html += `<div style="padding-left:14px;margin:2px 0">• ${mdInline(escHtml(line.replace(/^[\s]*[-*+] /,'')))}</div>`; return; }
+    // Ordered list
+    if (line.match(/^\d+\. /))       { html += `<div style="padding-left:14px;margin:2px 0">${line.match(/^\d+/)[0]}. ${mdInline(escHtml(line.replace(/^\d+\. /,'')))}</div>`; return; }
+    // Blockquote
+    if (line.startsWith('> '))        { html += `<div style="border-left:3px solid rgba(55,138,221,0.6);padding-left:10px;color:rgba(255,255,255,0.55);margin:3px 0;font-style:italic">${mdInline(escHtml(line.slice(2)))}</div>`; return; }
+    // Blank line → paragraph break
+    if (!line.trim())                  { html += `<div style="height:6px"></div>`; return; }
+    // Normal paragraph
+    html += `<div style="margin:2px 0">${mdInline(escHtml(line))}</div>`;
+  });
+
+  if (inCode) html += `<pre style="background:rgba(0,0,0,0.4);border-radius:6px;padding:10px 12px;font-size:11px;overflow-x:auto;margin:6px 0;"><code>${escHtml(codeLines.join('\n'))}</code></pre>`;
+  if (inTable) flushTable();
+  return html;
+}
+
+function mdInline(escaped) {
+  return escaped
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,    '<em>$1</em>')
+    .replace(/`(.*?)`/g,      '<code style="background:rgba(255,255,255,0.1);border-radius:3px;padding:1px 5px;font-size:11px">$1</code>')
+    .replace(/~~(.*?)~~/g,    '<del>$1</del>');
+}
+
+function csvToHtmlTable(csv) {
+  const rows = csv.trim().split('\n').filter(r => r.trim());
+  if (rows.length < 2) return escHtml(csv).replace(/\n/g,'<br>');
+  const headers = rows[0].split(',');
+  const body    = rows.slice(1);
+  return `<table class="chat-table"><thead><tr>${headers.map(h=>`<th>${escHtml(h.trim())}</th>`).join('')}</tr></thead>
+    <tbody>${body.map(r=>`<tr>${r.split(',').map(c=>`<td>${escHtml(c.trim())}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function checkAIHealth() {
+  try {
+    const data = await api.get('/ai/health');
+    const info = data.agent || {};
+    const id = 'msg-' + (++_msgCounter);
+    const reply = `✅ Agent online\n• Backend: ${info.backend||'?'}\n• Model: ${info.model||'?'}\n• Keys loaded: ${info.total_keys||1}\n• Groq key: ${info.groq_key_set ? 'set ✓' : 'missing ✗'}`;
+    const domId = appendBubble('ai', reply, id);
+    aiChatMessages.push({ id, role:'assistant', content:reply, domId });
+  } catch(e) {
+    appendBubble('sys', '❌ Agent not reachable — is python agent.py --http running?');
+  }
+}
+
+async function sendAIChat() {
+  const input = document.getElementById('aiChatInput');
+  const text  = (input.value || '').trim();
+  if (!text) return;
+  input.value = '';
+
+  const entityCode = getEntityCode();
+  const backend    = getAIBackend();
+  const model      = getAIModel();
+
+  // Add user message to state + DOM
+  const userId  = 'msg-' + (++_msgCounter);
+  const userDomId = appendBubble('user', text, userId);
+  aiChatMessages.push({ id: userId, role: 'user', content: text, domId: userDomId });
+
+  const typingId = appendTyping();
+
+  try {
+    const data = await api.post('/ai/chat', {
+      messages:    aiChatMessages.slice(-14).map(m => ({ role: m.role, content: m.content })),
+      entity_code: entityCode,
+      backend,
+      model
+    });
+    removeTyping(typingId);
+
+    if (data.success) {
+      const reply   = data.reply || '—';
+      const aiId    = 'msg-' + (++_msgCounter);
+      const aiDomId = appendBubble('ai', reply, aiId);
+      aiChatMessages.push({ id: aiId, role: 'assistant', content: reply, domId: aiDomId });
+    } else {
+      appendBubble('sys', '⚠ ' + (data.error || 'Unknown error from agent'));
+    }
+  } catch(e) {
+    removeTyping(typingId);
+    appendBubble('sys', '⚠ ' + (e.message || 'Request failed'));
+  }
+}
+
+
+function quickQuery(text) {
+  document.getElementById('aiChatInput').value = text;
+  sendAIChat();
+}
+
+
+
+async function runAIAnalysis() {
+  const entityCode = getEntityCode();
+  const backend = getAIBackend();
+  const model = getAIModel();
+
+  if (!entityCode) { showToast('Enter an Account Code (FT-XXXXXX) to run forensic analysis', 'error'); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true; btn.textContent = '⏳ Investigating...';
+
+  document.getElementById('aiResult').innerHTML = `
+    <div class="analyzing-spinner">
+      <span class="spinner"></span>
+      <span>🔍 Extracting all transactions and building forensic profile — this takes 20–60 seconds...</span>
+    </div>`;
+
+  try {
+    const data = await api.post('/ai/forensic', { entity_code: entityCode, backend, model });
+    renderForensicReport(data, entityCode);
+  } catch (e) {
+    document.getElementById('aiResult').innerHTML = `
+      <div class="result-empty">
+        <div class="result-empty-icon">⚠️</div>
+        <div style="color:#A32D2D; font-size:13px;">Forensic analysis failed: ${escHtml(e.message || 'Unknown error')}</div>
+        <div style="font-size:11px; color:#bbb; margin-top:4px;">Make sure agent.py is running and the account code is valid</div>
+      </div>`;
+    showToast(e.message || 'Forensic analysis failed', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '🔬 Forensic Dive';
+  }
+}
+
+function renderForensicReport(data, entityCode) {
+  if (!data.success) {
+    document.getElementById('aiResult').innerHTML = `
+      <div class="result-empty">
+        <div class="result-empty-icon">⚠️</div>
+        <div style="color:#A32D2D; font-size:13px;">${escHtml(data.error || 'Analysis failed')}</div>
+      </div>`;
+    return;
+  }
+
+  const stats = data.stats || {};
+  const cycles = data.cycles || [];
+  const acct = data.account || {};
+  const report = data.report || '';
+
+  // ── Stats bar ─────────────────────────────────────────────────────────────
+  const sentRecvRatio = stats.total_sent > 0 ? (stats.total_received / (stats.total_sent + stats.total_received)) * 100 : 50;
+  const cycleHtml = cycles.length > 0 ? `
+    <div style="background:#FCEBEB; border:0.5px solid #F09595; border-radius:8px; padding:10px 14px; margin-bottom:14px;">
+      <div style="font-size:12px; font-weight:700; color:#A32D2D; margin-bottom:6px;">⚡ ${cycles.length} Circular Flow${cycles.length>1?'s':''} Detected</div>
+      ${cycles.map(c => `<div style="font-size:12px; color:#5f5e5a; padding:2px 0;">
+        <strong>${entityCode}</strong> ↔ <strong>${c.counterparty}</strong> (${c.name || '?'})
+        — Sent ₹${Number(c.sent||0).toLocaleString()} / Received ₹${Number(c.received||0).toLocaleString()}
+        <span style="background:#F09595;color:#fff;border-radius:10px;padding:1px 8px;font-size:10px;margin-left:4px;">ratio ${c.ratio}</span>
+      </div>`).join('')}
+    </div>` : '';
+
+  const statsHtml = `
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px;">
+      ${[
+        ['Total Txns', stats.total_transactions, '📊'],
+        ['Total Sent', '₹'+Number(stats.total_sent||0).toLocaleString(), '↑'],
+        ['Total Received', '₹'+Number(stats.total_received||0).toLocaleString(), '↓'],
+        ['Counterparties', stats.unique_counterparties, '👥'],
+        ['High Risk Txns', stats.high_fraud_transactions, '🚨'],
+        ['Cycles Detected', stats.cycles_detected, '🔄'],
+        ['Net Flow', (stats.net_flow >= 0 ? '+' : '') + '₹'+Number(stats.net_flow||0).toLocaleString(), '≡'],
+        ['Account Status', acct.status || '?', '⚙️']
+      ].map(([label,val,icon]) => `
+        <div style="background:#f9f8f4;border:0.5px solid rgba(0,0,0,0.1);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:18px;margin-bottom:2px;">${icon}</div>
+          <div style="font-size:16px;font-weight:700;color:#1a1a18;">${val}</div>
+          <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">${label}</div>
+        </div>`).join('')}
+    </div>`;
+
+  // ── Render markdown report ────────────────────────────────────────────────
+  const reportHtml = report ? renderMarkdown(report) : `<div style="color:#bbb;padding:20px;text-align:center;">No narrative generated</div>`;
+
+  // Store raw data for MD export
+  window._lastForensicData = { data, entityCode, acct, stats, cycles, report };
+
+  document.getElementById('aiResult').innerHTML = `
+    <div style="font-size:13px; font-weight:600; color:#5f5e5a; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between;">
+      <span>🕵️ Forensic Deep Dive — ${entityCode} (${acct.full_name || '?'})</span>
+      <span style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:11px; color:#bbb; font-weight:400;">${data.model || '?'} • ${data.backend || '?'}</span>
+        <button onclick="exportForensicMD()" style="border:0.5px solid rgba(55,138,221,0.4);background:#E6F1FB;color:#1a5fa8;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;" title="Export report as Markdown">⬇ Export MD</button>
+      </span>
+    </div>
+    ${cycleHtml}
+    ${statsHtml}
+    <div style="border-top:0.5px solid rgba(0,0,0,0.08); padding-top:14px;">
+      ${reportHtml}
+    </div>
+  `;
+  showToast('Forensic investigation complete', 'success');
+}
+
+function renderMarkdown(text) {
+  // Parse markdown to HTML with tables, headings, bold, lists
+  const lines = text.split('\n');
+  let html = '';
+  let inTable = false;
+  let tableRows = [];
+
+  const flushTable = () => {
+    if (!tableRows.length) return;
+    // First row = header, second row = separator, rest = data
+    const headers = tableRows[0].split('|').map(c=>c.trim()).filter(c=>c);
+    const body = tableRows.slice(2);
+    html += `<div style="overflow-x:auto;margin:12px 0;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr>${headers.map(h=>`<th style="padding:6px 10px;background:#f1efe8;border-bottom:1.5px solid rgba(0,0,0,0.1);text-align:left;font-weight:600;color:#5f5e5a;">${mdInline(h)}</th>`).join('')}</tr></thead>
+      <tbody>${body.map((r,i)=>{
+        const cells = r.split('|').map(c=>c.trim()).filter(c=>c);
+        return `<tr style="background:${i%2===0?'#fff':'#fafaf8'}">${cells.map(c=>`<td style="padding:5px 10px;border-bottom:0.5px solid rgba(0,0,0,0.07);color:#5f5e5a;">${mdInline(c)}</td>`).join('')}</tr>`;
+      }).join('')}</tbody></table></div>`;
+    tableRows = [];
+    inTable = false;
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('|')) {
+      inTable = true;
+      tableRows.push(trimmed);
+      continue;
+    }
+    if (inTable) flushTable();
+
+    if (trimmed.startsWith('## ')) {
+      html += `<h2 style="font-size:15px;font-weight:700;margin:18px 0 8px;color:#1a1a18;border-bottom:0.5px solid rgba(0,0,0,0.08);padding-bottom:6px;">${mdInline(trimmed.slice(3))}</h2>`;
+    } else if (trimmed.startsWith('### ')) {
+      html += `<h3 style="font-size:13px;font-weight:600;margin:14px 0 6px;color:#5f5e5a;">${mdInline(trimmed.slice(4))}</h3>`;
+    } else if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+      html += `<div style="padding:3px 0 3px 16px;position:relative;font-size:12px;color:#5f5e5a;line-height:1.5;"><span style="position:absolute;left:4px;color:#E24B4A;">•</span>${mdInline(trimmed.slice(2))}</div>`;
+    } else if (trimmed === '') {
+      html += '<div style="height:6px;"></div>';
+    } else {
+      html += `<p style="font-size:13px;color:#5f5e5a;line-height:1.7;margin:4px 0;">${mdInline(trimmed)}</p>`;
+    }
+  }
+  if (inTable) flushTable();
+  return html;
+}
+
+function mdInline(text) {
+  return escHtml(text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`(.*?)`/g, '<code style="background:#f1efe8;padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11px;">$1</code>');
+}
+
+
+
+
+
+async function loadCoupons() {
+  try {
+    const { coupons, total } = await api.get('/coupons/list?limit=200');
+    document.getElementById('couponCount').textContent = `${total} coupons total`;
+    document.getElementById('couponsBody').innerHTML = coupons.map(c => `
+      <tr>
+        <td class="font-mono" style="font-size:12px;">${c.code}</td>
+        <td>${c.name}</td>
+        <td style="font-size:12px; color:#888;">${c.description || '—'}</td>
+        <td>₹${parseFloat(c.amount).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+        <td><span class="badge ${c.status==='redeemed'?'badge-success':c.status==='expired'?'badge-neutral':'badge-info'}">${c.status}</span></td>
+        <td style="font-size:11px;">${formatDate(c.created_at)}</td>
+        <td style="font-size:11px;">${c.created_by_name || '—'}</td>
+        <td style="font-size:11px;">${c.redeemed_by_name || '—'}</td>
+        <td style="font-size:11px;">${c.redeemed_at ? formatDate(c.redeemed_at) : '—'}</td>
+      </tr>`).join('');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function createCoupon() {
+  const name = document.getElementById('couponName').value.trim();
+  const description = document.getElementById('couponDesc').value.trim();
+  const amount = document.getElementById('couponAmount').value;
+  if (!name) { showToast('Enter coupon name', 'error'); return; }
+  try {
+    const res = await api.post('/coupons/create', { name, amount, description });
+    showToast('Coupon created: ' + res.code, 'success');
+    document.getElementById('couponName').value = '';
+    document.getElementById('couponDesc').value = '';
+    loadCoupons();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// TRANSACTIONS TAB
+// ═══════════════════════════════════════════════════════════
+
+let _txnData = [];     // current loaded transactions
+let _txnAccounts = []; // all client accounts (for dropdown)
+let _txnFiltered = ''; // counterparty filter from graph click
+
+
+// ─── ACCOUNT LIVE SEARCH ─────────────────────────────────────────────────────
+let _accSearchHighlight = -1;
+
+async function initTransactionsTab() {
+  // Pre-load accounts list for search
+  try {
+    const res = await api.get('/transactions/officer/list?limit=1');
+    _txnAccounts = res.accounts || [];
+  } catch (e) { console.warn('Transactions init error:', e); }
+  await loadTransactions();
+}
+
+function accSearchInput(inp) {
+  const q = inp.value.trim().toLowerCase();
+  document.getElementById('accSearchClear').classList.toggle('visible', q.length > 0);
+  if (!q) { closeAccResults(); return; }
+  const matches = _txnAccounts.filter(a =>
+    a.full_name.toLowerCase().includes(q) ||
+    (a.unique_code||'').toLowerCase().includes(q) ||
+    (a.account_number||'').toLowerCase().includes(q)
+  ).slice(0, 12);
+  const results = document.getElementById('accSearchResults');
+  if (!matches.length) {
+    results.innerHTML = '<div class="acc-result-item" style="color:#aaa;cursor:default;">No accounts found</div>';
+  } else {
+    results.innerHTML = matches.map((a, i) =>
+      `<div class="acc-result-item" data-code="${a.unique_code}" data-name="${a.full_name}" data-i="${i}"
+        onclick="selectAccount('${a.unique_code}','${a.full_name.replace(/'/g,'\\\'')}')"
+        onmouseenter="setSearchHighlight(${i})">
+        <div class="acc-result-name">${a.full_name}</div>
+        <div class="acc-result-sub">${a.unique_code || ''} ${a.account_number ? '· A/C '+a.account_number : ''}</div>
+      </div>`
+    ).join('');
+  }
+  results.classList.add('open');
+  _accSearchHighlight = -1;
+}
+
+function accSearchFocus() {
+  const q = document.getElementById('txnAccSearch').value.trim();
+  if (q.length > 0) accSearchInput(document.getElementById('txnAccSearch'));
+}
+
+function accSearchKey(e) {
+  const items = document.querySelectorAll('.acc-result-item[data-code]');
+  if (e.key === 'ArrowDown') { _accSearchHighlight = Math.min(_accSearchHighlight+1, items.length-1); setSearchHighlight(_accSearchHighlight); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { _accSearchHighlight = Math.max(_accSearchHighlight-1, 0); setSearchHighlight(_accSearchHighlight); e.preventDefault(); }
+  else if (e.key === 'Enter' && _accSearchHighlight >= 0 && items[_accSearchHighlight]) {
+    const it = items[_accSearchHighlight];
+    selectAccount(it.dataset.code, it.dataset.name); e.preventDefault();
+  } else if (e.key === 'Escape') { closeAccResults(); }
+}
+
+function setSearchHighlight(i) {
+  _accSearchHighlight = i;
+  document.querySelectorAll('.acc-result-item').forEach((el, idx) => {
+    el.style.background = idx === i ? '#E6F1FB' : '';
+  });
+}
+
+function selectAccount(code, name) {
+  // Set hidden value
+  document.getElementById('txnAccountSel').value = code;
+  // Hide search, show tag
+  document.getElementById('txnAccSearch').value = '';
+  document.getElementById('accSearchClear').classList.remove('visible');
+  closeAccResults();
+  const tag = document.getElementById('accSelectedTag');
+  tag.style.display = 'inline-flex';
+  tag.innerHTML = `<span class="acc-selected-tag">${name} <span onclick="clearAccSearch()" title="Clear">✕</span></span>`;
+  loadTransactions();
+}
+
+function clearAccSearch() {
+  document.getElementById('txnAccountSel').value = '';
+  document.getElementById('txnAccSearch').value = '';
+  document.getElementById('accSearchClear').classList.remove('visible');
+  document.getElementById('accSelectedTag').style.display = 'none';
+  closeAccResults();
+  loadTransactions();
+}
+
+function closeAccResults() {
+  document.getElementById('accSearchResults').classList.remove('open');
+}
+
+// Close on outside click
+document.addEventListener('click', e => {
+  if (!document.getElementById('accSearchWrap')?.contains(e.target)) closeAccResults();
+});
+
+
+
+async function loadTransactions() {
+  _txnFiltered = ''; // reset graph filter on manual reload
+  const accountCode = document.getElementById('txnAccountSel')?.value || '';
+  const channel     = document.getElementById('txnChannelFilter')?.value || '';
+  const status      = document.getElementById('txnStatusFilter')?.value || '';
+  const sort        = document.getElementById('txnSort')?.value || 'date_desc';
+
+  const params = new URLSearchParams({ sort, limit: 200 });
+  if (accountCode) params.set('account_code', accountCode);
+  if (channel)     params.set('channel', channel);
+  if (status)      params.set('status', status);
+
+  // Show loading
+  const tbody = document.getElementById('txnTableBody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px;">Loading…</td></tr>';
+
+  try {
+    const res = await api.get('/transactions/officer/list?' + params.toString());
+    _txnData = res.transactions || [];
+
+    // Update subtitle
+    const sub = document.getElementById('txnTabSubtitle');
+    if (sub) {
+      sub.textContent = accountCode
+        ? `Showing transactions for ${accountCode} — ${_txnData.length} record(s)`
+        : `All accounts — ${_txnData.length} transaction(s)`;
+    }
+
+    // Summary bar
+    const total    = res.total || _txnData.length;
+    const vol      = _txnData.reduce((s, t) => s + Number(t.amount || 0), 0);
+    const flagged  = _txnData.filter(t => t.flagged).length;
+    const avgScore = _txnData.length ? (_txnData.reduce((s,t) => s + Number(t.fraud_score||0), 0) / _txnData.length).toFixed(1) : '—';
+    document.getElementById('txnStatTotal').textContent   = total;
+    document.getElementById('txnStatVol').textContent     = '₹' + vol.toLocaleString('en-IN', {maximumFractionDigits:0});
+    document.getElementById('txnStatFlagged').textContent = flagged;
+    document.getElementById('txnStatScore').textContent   = avgScore;
+    const chBreak = (res.channels || []).map(c => `${c.channel}: ${c.cnt}`).join(' · ');
+    document.getElementById('txnStatChannels').textContent = chBreak || '—';
+
+    renderTxnTable(_txnData);
+    renderMiniGraph(_txnData, accountCode);
+
+  } catch (e) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#E24B4A;padding:24px;">Error: ${e.message}</td></tr>`;
+    console.error('loadTransactions error:', e);
+  }
+}
+
+function renderTxnTable(txns) {
+  const tbody = document.getElementById('txnTableBody');
+  const count = document.getElementById('txnTableCount');
+  if (!tbody) return;
+  count && (count.textContent = `${txns.length} record(s)`);
+
+  if (!txns.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:32px;">No transactions found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = txns.map((t, i) => {
+    const fs = Number(t.fraud_score || 0);
+    const fsColor = fs >= 70 ? '#E24B4A' : fs >= 40 ? '#F5A623' : '#0F6E56';
+    const fsBar = `<div class="fs-bar">
+      <span style="font-size:11px;font-weight:600;color:${fsColor};">${fs}</span>
+      <div class="fs-track"><div class="fs-fill" style="width:${fs}%;background:${fsColor};"></div></div>
+    </div>`;
+    const chClass = `ch-badge ch-${t.channel || 'IMPS'}`;
+    const stClass = `st-${(t.status||'').toLowerCase().replace(/[^a-z]/g,'')}`;
+    return `<tr onclick="selectTxnRow(this, '${t.txn_id}')">
+      <td style="color:#aaa;font-size:11px;">${i+1}</td>
+      <td><span class="code-chip">${t.txn_id}</span></td>
+      <td style="color:#666;font-size:11px;">${(t.txn_date||'').slice(0,16)}</td>
+      <td>
+        <div style="font-weight:500;font-size:12px;">${t.sender_name||'—'}</div>
+        <div class="code-chip" style="margin-top:2px;">${t.sender_code||''}</div>
+      </td>
+      <td>
+        <div style="font-weight:500;font-size:12px;">${t.receiver_name||'—'}</div>
+        <div class="code-chip" style="margin-top:2px;">${t.receiver_code||''}</div>
+      </td>
+      <td style="font-weight:700;font-size:13px;">₹${Number(t.amount||0).toLocaleString('en-IN')}</td>
+      <td><span class="${chClass}">${t.channel||'—'}</span></td>
+      <td><span class="${stClass}">${t.status||'—'}</span></td>
+      <td>${fsBar}</td>
+    </tr>`;
+  }).join('');
+}
+
+function selectTxnRow(tr, txnId) {
+  document.querySelectorAll('#txnTableBody tr').forEach(r => r.classList.remove('selected'));
+  tr.classList.add('selected');
+}
+
+// ── Mini Relation Graph — Full Interactive ────────────────
+let _mgPan = {x:0, y:0}, _mgZoom = 1, _mgDragging = false, _mgLastMouse = null;
+let _mgNodes = [], _mgEdges = [], _mgFocusCode = '';
+
+function renderMiniGraph(txns, focusCode) {
+  const canvas = document.getElementById('miniGraphCanvas');
+  if (!canvas) return;
+  _mgFocusCode = focusCode || '';
+
+  // Build counterparty data
+  const cp = {};
+  for (const t of txns) {
+    const isSender   = t.sender_code   === focusCode;
+    const isReceiver = t.receiver_code === focusCode;
+    const amt = Number(t.amount || 0);
+    if (focusCode) {
+      const oCode = isSender ? t.receiver_code : t.sender_code;
+      const oName = isSender ? t.receiver_name : t.sender_name;
+      if (!oCode) continue;
+      if (!cp[oCode]) cp[oCode] = {name: oName||oCode, sent:0, received:0, count:0};
+      if (isSender) cp[oCode].sent += amt; else cp[oCode].received += amt;
+      cp[oCode].count++;
+    } else {
+      const s = t.sender_code, r = t.receiver_code;
+      if (s) { if (!cp[s]) cp[s] = {name:t.sender_name||s, sent:0,received:0,count:0}; cp[s].sent+=amt; cp[s].count++; }
+      if (r) { if (!cp[r]) cp[r] = {name:t.receiver_name||r, sent:0,received:0,count:0}; cp[r].received+=amt; cp[r].count++; }
+    }
+  }
+
+  const entries = Object.entries(cp).sort((a,b)=>b[1].count-a[1].count).slice(0, focusCode?14:10);
+  _mgNodes = entries.map(([code, data], idx) => {
+    const angle = (2*Math.PI*idx/entries.length) - Math.PI/2;
+    return { code, ...data, angle, isCenter: false };
+  });
+  if (focusCode) {
+    const acc = _txnAccounts.find(a => a.unique_code === focusCode);
+    _mgNodes.push({ code: focusCode, name: acc?.full_name || focusCode, sent:0, received:0, count:0, isCenter: true });
+  }
+
+  _mgPan = {x:0, y:0}; _mgZoom = 1;
+  _drawMiniGraph();
+  _attachMiniGraphEvents(canvas);
+}
+
+function _drawMiniGraph() {
+  const canvas = document.getElementById('miniGraphCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth  || canvas.clientWidth  || 800;
+  canvas.height = canvas.offsetHeight || canvas.clientHeight || 420;
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!_mgNodes.length) {
+    ctx.fillStyle='#aaa'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('No counterparties to display', W/2, H/2);
+    return;
+  }
+
+  const cx = W/2 + _mgPan.x;
+  const cy = H/2 + _mgPan.y;
+  const R  = Math.min(W, H) * 0.35 * _mgZoom;
+  const maxVol = Math.max(..._mgNodes.filter(n=>!n.isCenter).map(n=>n.sent+n.received), 1);
+
+  // Compute positions
+  const nonCenter = _mgNodes.filter(n=>!n.isCenter);
+  const positions = {};
+  nonCenter.forEach((n, idx) => {
+    const angle = (2*Math.PI*idx/nonCenter.length) - Math.PI/2;
+    positions[n.code] = { x: cx + R*Math.cos(angle), y: cy + R*Math.sin(angle) };
+  });
+  if (_mgFocusCode) positions[_mgFocusCode] = { x: cx, y: cy };
+
+  // Draw a faint grid background
+  ctx.strokeStyle='rgba(0,0,0,0.03)'; ctx.lineWidth=1;
+  for (let gx=0; gx<W; gx+=40) { ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,H); ctx.stroke(); }
+  for (let gy=0; gy<H; gy+=40) { ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
+
+  // Draw edges
+  for (const n of nonCenter) {
+    const from = _mgFocusCode ? positions[_mgFocusCode] : null;
+    const to   = positions[n.code];
+    if (!from || !to) continue;
+    const totalVol = n.sent + n.received;
+    const lw = 1.5 + (totalVol/maxVol)*3.5;
+    if (n.sent > 0)      drawArrow(ctx, from.x, from.y, to.x, to.y, lw, '#E24B4A', 1);
+    if (n.received > 0)  drawArrow(ctx, to.x, to.y, from.x, from.y, lw, '#0F6E56', 1);
+  }
+
+  // Draw counterparty nodes
+  for (const n of nonCenter) {
+    const p = positions[n.code];
+    const r = (18 + ((n.sent+n.received)/maxVol)*14) * _mgZoom;
+    const riskColor = n.sent > n.received*1.5 ? '#E24B4A' : '#0F6E56';
+    // Outer glow
+    ctx.beginPath(); ctx.arc(p.x, p.y, r+4, 0, Math.PI*2);
+    ctx.fillStyle = riskColor+'18'; ctx.fill();
+    // Main circle
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+    ctx.fillStyle = riskColor+'22'; ctx.fill();
+    ctx.strokeStyle = riskColor; ctx.lineWidth = 2; ctx.stroke();
+    // Name (wrap to 14 chars)
+    const shortName = n.name.length > 14 ? n.name.slice(0,13)+'…' : n.name;
+    ctx.fillStyle='#1a1a18'; ctx.font=`bold ${Math.max(9,11*_mgZoom)}px sans-serif`; ctx.textAlign='center';
+    ctx.fillText(shortName, p.x, p.y - 3);
+    // Volume below name
+    ctx.font=`${Math.max(8,9*_mgZoom)}px sans-serif`; ctx.fillStyle='#666';
+    ctx.fillText('₹'+formatK(n.sent+n.received), p.x, p.y + 10);
+    // Count badge
+    ctx.font=`${Math.max(7,8*_mgZoom)}px monospace`; ctx.fillStyle='#aaa';
+    ctx.fillText(n.code, p.x, p.y + r + 14);
+  }
+
+  // Draw center node (focus account)
+  if (_mgFocusCode) {
+    const p = positions[_mgFocusCode];
+    const cr = 28 * _mgZoom;
+    // Outer pulse ring
+    ctx.beginPath(); ctx.arc(p.x, p.y, cr+6, 0, Math.PI*2);
+    ctx.strokeStyle='rgba(55,138,221,0.25)'; ctx.lineWidth=3; ctx.stroke();
+    // Main blue circle
+    ctx.beginPath(); ctx.arc(p.x, p.y, cr, 0, Math.PI*2);
+    ctx.fillStyle='#378ADD'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+    // Name in center
+    const centerAcc = _txnAccounts.find(a => a.unique_code === _mgFocusCode);
+    const cName = centerAcc?.full_name || _mgFocusCode;
+    const cShort = cName.length > 10 ? cName.slice(0,9)+'…' : cName;
+    ctx.fillStyle='#fff'; ctx.font=`bold ${Math.max(9,10*_mgZoom)}px sans-serif`; ctx.textAlign='center';
+    ctx.fillText(cShort, p.x, p.y - 3);
+    ctx.font=`${Math.max(7,8*_mgZoom)}px monospace`; ctx.fillStyle='rgba(255,255,255,0.65)';
+    ctx.fillText(_mgFocusCode, p.x, p.y + 10);
+    ctx.font='9px sans-serif'; ctx.fillStyle='rgba(255,255,255,0.4)';
+    ctx.fillText('Selected Account', p.x, p.y + cr + 14);
+  }
+}
+
+function _attachMiniGraphEvents(canvas) {
+  // Remove any previous listeners by cloning
+  const fresh = canvas.cloneNode(true);
+  canvas.parentNode.replaceChild(fresh, canvas);
+  const c = document.getElementById('miniGraphCanvas');
+  const tooltip = document.getElementById('mgTooltip');
+
+  // Pan
+  c.addEventListener('mousedown', e => { _mgDragging=true; _mgLastMouse={x:e.clientX,y:e.clientY}; c.classList.add('panning'); });
+  c.addEventListener('mouseup',   () => { _mgDragging=false; _mgLastMouse=null; c.classList.remove('panning'); });
+  c.addEventListener('mouseleave',() => { _mgDragging=false; _mgLastMouse=null; c.classList.remove('panning'); if(tooltip) tooltip.classList.remove('visible'); });
+  c.addEventListener('mousemove', e => {
+    const rect = c.getBoundingClientRect();
+    const mx = e.clientX-rect.left, my = e.clientY-rect.top;
+    if (_mgDragging && _mgLastMouse) {
+      _mgPan.x += e.clientX-_mgLastMouse.x;
+      _mgPan.y += e.clientY-_mgLastMouse.y;
+      _mgLastMouse = {x:e.clientX,y:e.clientY};
+      _drawMiniGraph(); return;
+    }
+    // Tooltip hit test
+    const hit = _mgHitTest(mx, my);
+    if (hit && tooltip) {
+      tooltip.classList.add('visible');
+      tooltip.style.left = (mx+12)+'px'; tooltip.style.top = (my-8)+'px';
+      tooltip.innerHTML = `<div style="font-weight:700;margin-bottom:4px;">${hit.name}</div>
+        <div style="font-family:monospace;color:#888;margin-bottom:5px;">${hit.code}</div>
+        <div style="color:#E24B4A;">↑ Sent: ₹${Number(hit.sent||0).toLocaleString('en-IN')}</div>
+        <div style="color:#0F6E56;">↓ Received: ₹${Number(hit.received||0).toLocaleString('en-IN')}</div>
+        <div style="color:#aaa;margin-top:4px;">${hit.count} transaction(s)</div>`;
+      c.style.cursor = 'pointer';
+    } else {
+      if(tooltip) tooltip.classList.remove('visible');
+      c.style.cursor = _mgDragging ? 'grabbing' : 'grab';
+    }
+  });
+
+  // Zoom
+  c.addEventListener('wheel', e => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    _mgZoom = Math.max(0.3, Math.min(3, _mgZoom * factor));
+    _drawMiniGraph();
+  }, {passive:false});
+
+  // Click to filter
+  c.addEventListener('click', e => {
+    const rect = c.getBoundingClientRect();
+    const mx = e.clientX-rect.left, my = e.clientY-rect.top;
+    const hit = _mgHitTest(mx, my);
+    if (hit && !hit.isCenter) {
+      filterTableByCP(hit.code);
+    } else if (!hit) {
+      renderTxnTable(_txnData);
+      const countEl = document.getElementById('txnTableCount');
+      if (countEl) countEl.textContent = `${_txnData.length} record(s)`;
+    }
+  });
+}
+
+function _mgHitTest(mx, my) {
+  // Recompute positions (copy of draw logic)
+  const canvas = document.getElementById('miniGraphCanvas');
+  if (!canvas) return null;
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2+_mgPan.x, cy = H/2+_mgPan.y;
+  const R  = Math.min(W,H)*0.35*_mgZoom;
+  const nonCenter = _mgNodes.filter(n=>!n.isCenter);
+  const maxVol = Math.max(...nonCenter.map(n=>n.sent+n.received), 1);
+  for (let i=0; i<nonCenter.length; i++) {
+    const angle = (2*Math.PI*i/nonCenter.length) - Math.PI/2;
+    const px = cx + R*Math.cos(angle), py = cy + R*Math.sin(angle);
+    const r = (18 + (nonCenter[i].sent+nonCenter[i].received)/maxVol*14)*_mgZoom + 4;
+    if (Math.hypot(mx-px, my-py) < r) return nonCenter[i];
+  }
+  if (_mgFocusCode) {
+    if (Math.hypot(mx-cx, my-cy) < 28*_mgZoom+6) return _mgNodes.find(n=>n.isCenter);
+  }
+  return null;
+}
+
+// ── Forensic MD Export ────────────────────────────────────
+function exportForensicMD() {
+  const fd = window._lastForensicData;
+  if (!fd) { showToast('No forensic report to export', 'error'); return; }
+  const { entityCode, acct, stats, cycles, report, data } = fd;
+  const date = new Date().toISOString().slice(0,10);
+
+  let md = `# Forensic Investigation Report\n`;
+  md += `**Account:** ${entityCode} — ${acct.full_name || '?'}\n`;
+  md += `**Generated:** ${new Date().toLocaleString('en-IN')} | **Model:** ${data.model||'?'} (${data.backend||'?'})\n\n---\n\n`;
+
+  md += `## Summary Statistics\n\n`;
+  md += `| Metric | Value |\n|--------|-------|\n`;
+  md += `| Total Transactions | ${stats.total_transactions || '—'} |\n`;
+  md += `| Total Sent | ₹${Number(stats.total_sent||0).toLocaleString('en-IN')} |\n`;
+  md += `| Total Received | ₹${Number(stats.total_received||0).toLocaleString('en-IN')} |\n`;
+  md += `| Net Flow | ${stats.net_flow >= 0 ? '+' : ''}₹${Number(stats.net_flow||0).toLocaleString('en-IN')} |\n`;
+  md += `| Unique Counterparties | ${stats.unique_counterparties||'—'} |\n`;
+  md += `| High-Risk Transactions | ${stats.high_fraud_transactions||'—'} |\n`;
+  md += `| Cycles Detected | ${stats.cycles_detected||'—'} |\n`;
+  md += `| Account Status | ${acct.status||'—'} |\n\n`;
+
+  if (cycles && cycles.length > 0) {
+    md += `## ⚡ Circular Flows Detected\n\n`;
+    cycles.forEach(c => {
+      md += `- **${entityCode}** ↔ **${c.counterparty}** (${c.name||'?'}): Sent ₹${Number(c.sent||0).toLocaleString()} / Received ₹${Number(c.received||0).toLocaleString()} — Ratio: ${c.ratio}\n`;
+    });
+    md += '\n';
+  }
+
+  md += `## Forensic Analysis\n\n${report || '_No narrative generated_'}\n\n---\n_Report exported from FundTrace AI Officer Dashboard_\n`;
+
+  const blob = new Blob([md], {type:'text/markdown'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `forensic_${entityCode}_${date}.md`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  showToast('Forensic report exported as Markdown', 'success');
+}
+
+
+
+
+
+function drawArrow(ctx, x1, y1, x2, y2, lw, color, alpha) {
+  const dx = x2-x1, dy = y2-y1, dist = Math.hypot(dx,dy);
+  if (dist < 30) return;
+  const nx = dx/dist, ny = dy/dist;
+  const sx = x1 + nx*22, sy = y1 + ny*22;
+  const ex = x2 - nx*22, ey = y2 - ny*22;
+  // Always draw in black for visibility on light canvas background
+  const lineColor = '#222222';
+  ctx.save();
+  ctx.globalAlpha = Math.max(alpha, 0.85);
+  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey);
+  ctx.strokeStyle = lineColor; ctx.lineWidth = Math.max(lw, 2); ctx.stroke();
+  // Arrowhead — filled black
+  const angle = Math.atan2(ey-sy, ex-sx);
+  const ahLen = 10;
+  ctx.beginPath();
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - ahLen*Math.cos(angle-0.45), ey - ahLen*Math.sin(angle-0.45));
+  ctx.lineTo(ex - ahLen*Math.cos(angle+0.45), ey - ahLen*Math.sin(angle+0.45));
+  ctx.closePath();
+  ctx.fillStyle = lineColor; ctx.fill();
+  // Direction label (SENT / RECV) in dark blue
+  const mx = (sx+ex)/2, my = (sy+ey)/2;
+  ctx.font = 'bold 9px sans-serif';
+  ctx.fillStyle = '#1a3fa8';
+  ctx.textAlign = 'center';
+  ctx.fillText(color === '#E24B4A' ? '▸ SENT' : '▸ RECV', mx, my - 5);
+  ctx.restore();
+}
+
+function filterTableByCP(code) {
+  const filtered = _txnData.filter(t => t.sender_code === code || t.receiver_code === code);
+  renderTxnTable(filtered);
+  document.getElementById('txnTableCount').textContent = `${filtered.length} record(s) for ${code} (click canvas to reset)`;
+}
+
+function formatK(n) {
+  if (n >= 1e7) return (n/1e7).toFixed(1)+'Cr';
+  if (n >= 1e5) return (n/1e5).toFixed(1)+'L';
+  if (n >= 1e3) return (n/1e3).toFixed(0)+'K';
+  return n;
+}
+
+// ── Export ────────────────────────────────────────────────
+function exportTxns(format) {
+  const accountCode = document.getElementById('txnAccountSel')?.value || '';
+  let url = '/api/transactions/officer/export?format=' + format;
+  if (accountCode) url += '&account_code=' + encodeURIComponent(accountCode);
+  const a = document.createElement('a');
+  a.href = url; a.style.display = 'none';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+}
+
+// ── Question → AI Chat ────────────────────────────────────
+function sendQsToAI(btn) {
+  const question = btn.textContent.trim();
+  const accountCode = document.getElementById('txnAccountSel')?.value || '';
+
+  // Set the entity code in the AI tab so the AI queries DB for this account
+  const aiEntityInput = document.getElementById('aiEntityCode');
+  if (aiEntityInput && accountCode) {
+    aiEntityInput.value = accountCode;
+  }
+
+  // Build the question with account prefix so the AI knows the context
+  const prefix = accountCode ? `[Account: ${accountCode}] ` : '';
+  const fullQ = prefix + question;
+
+  // Switch to AI tab first
+  const aiTabBtn = document.querySelector('.officer-tab[onclick*="\'ai\'"]');
+  if (aiTabBtn) aiTabBtn.click();
+
+  // Then fill the chat input and send via quickQuery (same as quick-query buttons)
+  setTimeout(() => {
+    const inp = document.getElementById('aiChatInput');
+    if (inp) {
+      inp.value = fullQ;
+      sendAIChat();
+    }
+  }, 180);
+}
+
+// ── Toggle question category ──────────────────────────────
+function toggleQsCat(el) {
+  el.classList.toggle('collapsed');
+  const chips = el.nextElementSibling;
+  if (chips) chips.classList.toggle('hidden');
+}
+
+// Hook into switchTab to lazy-init the transactions tab
+const _origSwitchTab = window.switchTab;
+window.switchTab = function(tab, el) {
+  if (_origSwitchTab) _origSwitchTab(tab, el);
+  if (tab === 'transactions') initTransactionsTab();
+};
+
+init();
+
+window.addEventListener('resize', renderGraph);
+</script>
+</body>
+</html>

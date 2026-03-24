@@ -1,0 +1,157 @@
+[
+  {
+    "label": "Officer login",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "success=true",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply not empty",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "had_db_data=True",
+    "status": "PASS",
+    "note": "AI used no DB data — still falling through to fallback"
+  },
+  {
+    "label": "No hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "No 'don't have access'",
+    "status": "PASS",
+    "note": "AI said it cannot access account data"
+  },
+  {
+    "label": "HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "success=true",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply not empty",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "had_db_data=True",
+    "status": "PASS",
+    "note": "AI used no DB data — still falling through to fallback"
+  },
+  {
+    "label": "No hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "No 'don't have access'",
+    "status": "PASS",
+    "note": "AI said it cannot access account data"
+  },
+  {
+    "label": "HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "success=true",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply not empty",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "had_db_data=True",
+    "status": "PASS",
+    "note": "AI used no DB data — still falling through to fallback"
+  },
+  {
+    "label": "No hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "No 'don't have access'",
+    "status": "PASS",
+    "note": "AI said it cannot access account data"
+  },
+  {
+    "label": "HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "success=true",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply not empty",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "had_db_data=True",
+    "status": "PASS",
+    "note": "AI used no DB data — still falling through to fallback"
+  },
+  {
+    "label": "No hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "No 'don't have access'",
+    "status": "PASS",
+    "note": "AI said it cannot access account data"
+  },
+  {
+    "label": "HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "success=true",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply not empty",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "had_db_data=True",
+    "status": "PASS",
+    "note": "AI used no DB data — still falling through to fallback"
+  },
+  {
+    "label": "No hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "No 'don't have access'",
+    "status": "PASS",
+    "note": "AI said it cannot access account data"
+  }
+]

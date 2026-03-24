@@ -1,0 +1,18 @@
+fundtrace/
+├── server/          ← Node.js backend
+│   ├── index.js     Main server + Socket.IO
+│   ├── db.js        SQLite schema (auto-creates fundtrace.db on first run)
+│   ├── auth.js      bcrypt login/register + JWT + brute-force protection
+│   ├── transactions.js  Send money, history, real-time events
+│   ├── social.js    Friend requests (Instagram-style)
+│   ├── fraud.js     ML fraud engine + all officer API routes
+│   └── package.json
+├── client/          ← Customer web app
+│   ├── login.html / register.html
+│   ├── dashboard.html   Balance, send money, live notifications
+│   ├── friends.html     Add by FT-XXXXXX ID, accept/reject requests
+│   └── transactions.html  Full history with filters
+├── officer/         ← FundTrace AI portal
+│   ├── login.html   Dark-themed officer login
+│   └── dashboard.html  Live stats, graph explorer, accounts, fraud alerts
+└── README.md        Full setup guide with troubleshooting

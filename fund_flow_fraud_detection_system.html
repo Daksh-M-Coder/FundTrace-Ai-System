@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans, 'Segoe UI', sans-serif); background: var(--color-background-tertiary, #f5f4ef); color: var(--color-text-primary, #1a1a18); font-size: 14px; }
+
+  /* Layout */
+  .app { display: flex; flex-direction: column; height: 100vh; min-height: 700px; }
+  .topbar { background: var(--color-background-primary, #fff); border-bottom: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.15)); padding: 0 20px; display: flex; align-items: center; gap: 16px; height: 52px; flex-shrink: 0; }
+  .logo { font-size: 15px; font-weight: 500; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
+  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: #E24B4A; }
+  .nav-tabs { display: flex; gap: 2px; margin-left: 24px; }
+  .nav-tab { padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; color: var(--color-text-secondary, #5f5e5a); border: none; background: transparent; transition: all 0.15s; }
+  .nav-tab:hover { background: var(--color-background-secondary, #f1efe8); color: var(--color-text-primary, #1a1a18); }
+  .nav-tab.active { background: var(--color-background-secondary, #f1efe8); color: var(--color-text-primary, #1a1a18); font-weight: 500; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .alert-badge { background: #FCEBEB; color: #A32D2D; font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 20px; }
+  .btn { padding: 6px 14px; border-radius: 6px; border: 0.5px solid var(--color-border-secondary, rgba(0,0,0,0.3)); background: transparent; cursor: pointer; font-size: 13px; color: var(--color-text-primary, #1a1a18); transition: all 0.15s; }
+  .btn:hover { background: var(--color-background-secondary, #f1efe8); }
+  .btn-primary { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+  .btn-primary:hover { background: #333; }
+  .btn-danger { background: #E24B4A; color: #fff; border-color: #E24B4A; }
+
+  /* Main content */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: 280px; flex-shrink: 0; background: var(--color-background-primary, #fff); border-right: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.15)); display: flex; flex-direction: column; overflow-y: auto; }
+  .sidebar-section { padding: 16px; border-bottom: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.15)); }
+  .sidebar-label { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary, #888); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+
+  /* Alert list */
+  .alert-item { padding: 10px 12px; border-radius: 8px; border: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.15)); margin-bottom: 8px; cursor: pointer; transition: all 0.15s; background: var(--color-background-primary, #fff); }
+  .alert-item:hover { border-color: var(--color-border-secondary, rgba(0,0,0,0.3)); }
+  .alert-item.selected { border-color: #E24B4A; background: #FCEBEB; }
+  .alert-item.medium.selected { border-color: #BA7517; background: #FAEEDA; }
+  .alert-item.low.selected { border-color: #185FA5; background: #E6F1FB; }
+  .alert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .alert-id { font-size: 12px; font-weight: 500; }
+  .risk-badge { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; }
+  .risk-high { background: #FCEBEB; color: #A32D2D; }
+  .risk-medium { background: #FAEEDA; color: #854F0B; }
+  .risk-low { background: #E6F1FB; color: #185FA5; }
+  .alert-type { font-size: 12px; color: var(--color-text-secondary, #5f5e5a); margin-bottom: 3px; }
+  .alert-meta { font-size: 11px; color: var(--color-text-tertiary, #888); }
+
+  /* Graph panel */
+  .graph-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+  .graph-toolbar { padding: 12px 16px; background: var(--color-background-primary, #fff); border-bottom: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.15)); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .graph-title { font-size: 14px; font-weight: 500; }
+  .graph-subtitle { font-size: 12px; color: var(--color-text-secondary, #5f5e5a); }
+  .graph-canvas-wrap { flex: 1; position: relative; overflow: hidden; background: var(--color-background-secondary, #f1efe8); }
+  #graphCanvas { width: 100%; height: 100%; display: block; cursor: grab; }
+  #graphCanvas:active { cursor: grabbing; }
+
+  /* Right panel */
+  .right-panel { width: 300px; flex-shrink: 0; background: var(--color-background-primary, #fff); border-left: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.15)); display: flex; flex-direction: column; overflow-y: auto; }
+  .rpanel-section { padding: 16px; border-bottom: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.15)); }
+  .rpanel-title { font-size: 13px; font-weight: 500; margin-bottom: 12px; }
+  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.08)); font-size: 12px; }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: var(--color-text-secondary, #5f5e5a); }
+  .stat-val { font-weight: 500; }
+  .stat-val.danger { color: #A32D2D; }
+  .stat-val.warn { color: #854F0B; }
+  .stat-val.info { color: #185FA5; }
+
+  /* Patterns */
+  .pattern-item { padding: 8px 10px; border-radius: 6px; margin-bottom: 6px; border: 0.5px solid; font-size: 12px; }
+  .p-high { background: #FCEBEB; border-color: #F09595; color: #A32D2D; }
+  .p-medium { background: #FAEEDA; border-color: #FAC775; color: #854F0B; }
+  .p-low { background: #E6F1FB; border-color: #B5D4F4; color: #185FA5; }
+  .pattern-name { font-weight: 500; margin-bottom: 2px; }
+  .pattern-desc { font-size: 11px; opacity: 0.85; }
+
+  /* Node tooltip */
+  .tooltip { position: absolute; background: var(--color-background-primary, #fff); border: 0.5px solid var(--color-border-secondary, rgba(0,0,0,0.3)); border-radius: 8px; padding: 10px 12px; font-size: 12px; pointer-events: none; min-width: 180px; display: none; z-index: 100; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .tooltip.visible { display: block; }
+  .tooltip-name { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+  .tooltip-row { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; color: var(--color-text-secondary, #5f5e5a); }
+
+  /* Legend */
+  .legend { position: absolute; bottom: 12px; left: 12px; background: var(--color-background-primary, #fff); border: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.15)); border-radius: 8px; padding: 10px 12px; font-size: 11px; }
+  .legend-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; color: var(--color-text-secondary, #5f5e5a); }
+  .legend-row:last-child { margin-bottom: 0; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-line { width: 18px; height: 2px; flex-shrink: 0; }
+
+  /* FIU Report panel */
+  .report-panel { display: none; flex: 1; padding: 24px; overflow-y: auto; }
+  .report-panel.active { display: block; }
+  .report-card { background: var(--color-background-primary, #fff); border: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.15)); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  .report-h1 { font-size: 18px; font-weight: 500; margin-bottom: 4px; }
+  .report-h2 { font-size: 14px; font-weight: 500; margin-bottom: 12px; color: var(--color-text-primary, #1a1a18); }
+  .report-meta { font-size: 12px; color: var(--color-text-secondary, #5f5e5a); margin-bottom: 16px; }
+  .report-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .report-table th { text-align: left; padding: 6px 8px; background: var(--color-background-secondary, #f1efe8); font-weight: 500; font-size: 11px; color: var(--color-text-secondary, #5f5e5a); text-transform: uppercase; letter-spacing: 0.3px; }
+  .report-table td { padding: 7px 8px; border-bottom: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.1)); }
+  .report-table tr:last-child td { border-bottom: none; }
+  .evidence-box { background: var(--color-background-secondary, #f1efe8); border-radius: 6px; padding: 12px; font-size: 12px; line-height: 1.7; color: var(--color-text-secondary, #5f5e5a); margin-top: 8px; }
+
+  /* Dashboard tab */
+  .dashboard-panel { display: none; flex: 1; padding: 20px; overflow-y: auto; flex-direction: column; gap: 16px; }
+  .dashboard-panel.active { display: flex; }
+  .metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .metric-card { background: var(--color-background-primary, #fff); border-radius: 8px; border: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.15)); padding: 14px 16px; }
+  .metric-label { font-size: 11px; color: var(--color-text-secondary, #5f5e5a); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .metric-val { font-size: 22px; font-weight: 500; }
+  .metric-val.danger { color: #A32D2D; }
+  .metric-val.warn { color: #854F0B; }
+  .metric-val.info { color: #185FA5; }
+  .metric-delta { font-size: 11px; margin-top: 4px; }
+  .delta-up { color: #A32D2D; }
+  .delta-dn { color: #0F6E56; }
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .chart-card { background: var(--color-background-primary, #fff); border-radius: 8px; border: 0.5px solid var(--color-border-tertiary, rgba(0,0,0,0.15)); padding: 16px; }
+  .chart-card-title { font-size: 13px; font-weight: 500; margin-bottom: 12px; color: var(--color-text-secondary, #5f5e5a); }
+
+  /* Tabs for main content */
+  .content-area { flex: 1; display: flex; overflow: hidden; }
+
+  /* Mini chart bars */
+  .mini-bar-wrap { display: flex; align-items: flex-end; gap: 3px; height: 60px; }
+  .mini-bar { background: var(--color-border-secondary, rgba(0,0,0,0.2)); border-radius: 2px 2px 0 0; flex: 1; transition: background 0.2s; }
+  .mini-bar.alert { background: #E24B4A; }
+  .mini-bar.warn { background: #EF9F27; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .pulsing { animation: pulse 1.5s ease-in-out infinite; }
+
+  /* ML score gauge */
+  .gauge-wrap { display: flex; flex-direction: column; align-items: center; padding: 8px 0; }
+  .gauge-score { font-size: 32px; font-weight: 500; }
+  .gauge-label { font-size: 11px; color: var(--color-text-secondary, #5f5e5a); margin-top: 4px; }
+  .gauge-bar { width: 100%; height: 6px; border-radius: 3px; background: var(--color-background-secondary, #f1efe8); margin-top: 10px; overflow: hidden; }
+  .gauge-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="logo"><span class="logo-dot"></span> FundTrace AI</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('graph')">Graph Explorer</button>
+      <button class="nav-tab" onclick="switchTab('dashboard')">Dashboard</button>
+      <button class="nav-tab" onclick="switchTab('report')">FIU Report</button>
+    </div>
+    <div class="topbar-right">
+      <span class="alert-badge pulsing">⚠ 3 High Risk Alerts</span>
+      <button class="btn" onclick="switchTab('report')">Generate FIU Report</button>
+    </div>
+  </div>
+
+  <!-- Graph Explorer Tab -->
+  <div class="content-area" id="tab-graph" style="display:flex;">
+    <!-- Sidebar: Alerts -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Active Alerts</div>
+        <div id="alert-list"></div>
+      </div>
+      <div class="sidebar-section" style="flex:1;">
+        <div class="sidebar-label">Filter</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <label style="font-size:12px; color:var(--color-text-secondary); display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="f-circular" checked onchange="renderGraph()"> Circular transactions
+          </label>
+          <label style="font-size:12px; color:var(--color-text-secondary); display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="f-layering" checked onchange="renderGraph()"> Rapid layering
+          </label>
+          <label style="font-size:12px; color:var(--color-text-secondary); display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="f-dormant" checked onchange="renderGraph()"> Dormant activation
+          </label>
+          <label style="font-size:12px; color:var(--color-text-secondary); display:flex; align-items:center; gap:6px;">
+            <input type="checkbox" id="f-structuring" checked onchange="renderGraph()"> Structuring
+          </label>
+          <div style="margin-top:8px; font-size:12px; color:var(--color-text-secondary);">Min. amount</div>
+          <input type="range" min="0" max="100" value="0" id="f-amount" oninput="updateAmountFilter(this.value)">
+          <div style="font-size:11px; color:var(--color-text-tertiary); text-align:right;" id="amount-label">₹0 (all)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graph Canvas -->
+    <div class="graph-panel">
+      <div class="graph-toolbar">
+        <div>
+          <div class="graph-title" id="graph-title">Fund Flow Network — Alert ALT-0012</div>
+          <div class="graph-subtitle" id="graph-subtitle">Circular transaction pattern · 7 accounts · ₹48.2 Cr total flow</div>
+        </div>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+          <button class="btn" onclick="resetZoom()">Reset view</button>
+          <button class="btn" onclick="traceFullPath()">Trace full path</button>
+        </div>
+      </div>
+      <div class="graph-canvas-wrap">
+        <canvas id="graphCanvas"></canvas>
+        <div class="tooltip" id="tooltip">
+          <div class="tooltip-name" id="tt-name"></div>
+          <div class="tooltip-row"><span>Account</span><span id="tt-acc"></span></div>
+          <div class="tooltip-row"><span>Branch</span><span id="tt-branch"></span></div>
+          <div class="tooltip-row"><span>Balance</span><span id="tt-bal"></span></div>
+          <div class="tooltip-row"><span>Risk score</span><span id="tt-risk" style="font-weight:500;"></span></div>
+          <div class="tooltip-row"><span>Transactions</span><span id="tt-txn"></span></div>
+          <div style="margin-top:8px; padding-top:8px; border-top:0.5px solid var(--color-border-tertiary); font-size:11px; color:var(--color-text-tertiary);">Click to investigate</div>
+        </div>
+        <div class="legend">
+          <div class="legend-row"><div class="legend-dot" style="background:#E24B4A;"></div> High risk account</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#EF9F27;"></div> Medium risk account</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#378ADD;"></div> Normal account</div>
+          <div class="legend-row"><div class="legend-dot" style="background:#888780;"></div> Dormant account</div>
+          <div class="legend-row"><div class="legend-line" style="background:#E24B4A; height:2px;"></div> Suspicious flow</div>
+          <div class="legend-row"><div class="legend-line" style="background:#B4B2A9; height:1px;"></div> Normal flow</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right panel: ML analysis -->
+    <div class="right-panel">
+      <div class="rpanel-section">
+        <div class="rpanel-title">ML Risk Assessment</div>
+        <div class="gauge-wrap">
+          <div class="gauge-score danger" id="risk-score">91</div>
+          <div class="gauge-label">Overall Risk Score</div>
+          <div class="gauge-bar"><div class="gauge-fill" id="gauge-fill" style="width:91%; background:#E24B4A;"></div></div>
+        </div>
+      </div>
+
+      <div class="rpanel-section">
+        <div class="rpanel-title">Detected Patterns</div>
+        <div id="pattern-list"></div>
+      </div>
+
+      <div class="rpanel-section">
+        <div class="rpanel-title">Transaction Summary</div>
+        <div id="txn-stats"></div>
+      </div>
+
+      <div class="rpanel-section">
+        <div class="rpanel-title">Account Profile Mismatch</div>
+        <div style="font-size:12px; color:var(--color-text-secondary); line-height:1.6;" id="profile-mismatch">
+          Declared profile: <strong>Retail savings</strong><br>
+          Actual behaviour: High-frequency corporate-scale transfers inconsistent with declared income of ₹4.2L/yr. Volume anomaly: <span style="color:#A32D2D; font-weight:500;">43× expected</span>
+        </div>
+      </div>
+
+      <div class="rpanel-section">
+        <div class="rpanel-title">Investigator Actions</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button class="btn" style="text-align:left; font-size:12px;" onclick="alert('Account freeze order placed for ACC-2847 and linked accounts')">Freeze linked accounts</button>
+          <button class="btn" style="text-align:left; font-size:12px;" onclick="switchTab('report')">Generate FIU STR</button>
+          <button class="btn" style="text-align:left; font-size:12px;" onclick="alert('Case escalated to Senior Investigator')">Escalate case</button>
+          <button class="btn btn-danger" style="text-align:left; font-size:12px;" onclick="alert('Alert marked for FIU filing')">Mark for FIU filing</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Tab -->
+  <div class="dashboard-panel" id="tab-dashboard">
+    <div class="metrics-row">
+      <div class="metric-card">
+        <div class="metric-label">Total Alerts</div>
+        <div class="metric-val danger">247</div>
+        <div class="metric-delta delta-up">↑ 18% this week</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">High Risk Cases</div>
+        <div class="metric-val danger">38</div>
+        <div class="metric-delta delta-up">↑ 3 new today</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Suspicious Volume</div>
+        <div class="metric-val warn">₹847 Cr</div>
+        <div class="metric-delta delta-up">↑ 22% vs last month</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">FIU Reports Filed</div>
+        <div class="metric-val info">14</div>
+        <div class="metric-delta delta-dn">↓ 2 pending review</div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-card-title">Alert volume — last 14 days</div>
+        <div id="bar-chart" class="mini-bar-wrap"></div>
+        <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--color-text-tertiary); margin-top:4px;">
+          <span>Mar 2</span><span>Mar 16</span>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Fraud pattern distribution</div>
+        <div style="position:relative; height:60px;">
+          <canvas id="doughnutChart"></canvas>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; font-size:11px; color:var(--color-text-secondary);">
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#E24B4A;display:inline-block;"></span>Circular 34%</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#EF9F27;display:inline-block;"></span>Layering 28%</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#378ADD;display:inline-block;"></span>Structuring 22%</span>
+          <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;border-radius:2px;background:#888780;display:inline-block;"></span>Dormant 16%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card" style="width:100%;">
+      <div class="chart-card-title">Top suspicious accounts by flow volume</div>
+      <table class="report-table">
+        <thead><tr><th>Account ID</th><th>Account Holder</th><th>Branch</th><th>Flow Volume</th><th>Risk Score</th><th>Pattern</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>ACC-2847</td><td>Rajan Enterprises</td><td>Mumbai-Fort</td><td>₹48.2 Cr</td><td><span class="risk-badge risk-high">91</span></td><td>Circular</td><td><span class="risk-badge risk-high">Under Review</span></td></tr>
+          <tr><td>ACC-1103</td><td>K. Mehta Trading Co.</td><td>Delhi-Connaught</td><td>₹31.7 Cr</td><td><span class="risk-badge risk-high">87</span></td><td>Layering</td><td><span class="risk-badge risk-high">Frozen</span></td></tr>
+          <tr><td>ACC-7742</td><td>Sunrise Exports Pvt Ltd</td><td>Chennai-Nungambakkam</td><td>₹22.4 Cr</td><td><span class="risk-badge risk-medium">72</span></td><td>Structuring</td><td><span class="risk-badge risk-medium">Monitoring</span></td></tr>
+          <tr><td>ACC-5519</td><td>Priya Constructions</td><td>Bangalore-MG Road</td><td>₹19.8 Cr</td><td><span class="risk-badge risk-medium">68</span></td><td>Dormant</td><td><span class="risk-badge risk-medium">Monitoring</span></td></tr>
+          <tr><td>ACC-3381</td><td>Harshad V. Shah</td><td>Ahmedabad-CG Road</td><td>₹14.1 Cr</td><td><span class="risk-badge risk-low">54</span></td><td>Layering</td><td><span class="risk-badge risk-low">Open</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FIU Report Tab -->
+  <div class="report-panel" id="tab-report">
+    <div class="report-card">
+      <div class="report-h1">Suspicious Transaction Report (STR)</div>
+      <div class="report-meta">Report Ref: STR/2026/03/0047 &nbsp;|&nbsp; Generated: 16 Mar 2026 &nbsp;|&nbsp; Filing Institution: Mumbai National Bank &nbsp;|&nbsp; Prepared by: FundTrace AI Investigator Module</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <span class="risk-badge risk-high" style="font-size:12px; padding:4px 12px;">HIGH PRIORITY</span>
+        <span class="risk-badge risk-high" style="font-size:12px; padding:4px 12px;">FIU-IND FILING REQUIRED</span>
+      </div>
+    </div>
+
+    <div class="report-card">
+      <div class="report-h2">Section 1 — Subject Accounts</div>
+      <table class="report-table">
+        <thead><tr><th>Account No.</th><th>Name</th><th>KYC Type</th><th>Branch</th><th>Account Type</th><th>Opening Date</th></tr></thead>
+        <tbody>
+          <tr><td>ACC-2847</td><td>Rajan Enterprises</td><td>GST + PAN</td><td>Mumbai-Fort</td><td>Current</td><td>12 Jan 2019</td></tr>
+          <tr><td>ACC-0041</td><td>R.K. Holdings LLP</td><td>PAN</td><td>Mumbai-Bandra</td><td>Current</td><td>8 Jun 2021</td></tr>
+          <tr><td>ACC-6628</td><td>Vijay Trading Ltd.</td><td>PAN + GST</td><td>Pune-Camp</td><td>Current</td><td>3 Mar 2020</td></tr>
+          <tr><td>ACC-9012</td><td>Anita R. Shetty</td><td>Aadhaar + PAN</td><td>Mumbai-Fort</td><td>Savings</td><td>22 Jul 2017</td></tr>
+          <tr><td>ACC-3354</td><td>FastBuild Infra Pvt Ltd</td><td>CIN + PAN</td><td>Navi Mumbai</td><td>Current</td><td>15 Nov 2022</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="report-card">
+      <div class="report-h2">Section 2 — Transaction Trail</div>
+      <table class="report-table">
+        <thead><tr><th>Txn ID</th><th>Date</th><th>From</th><th>To</th><th>Amount</th><th>Channel</th><th>Flag</th></tr></thead>
+        <tbody>
+          <tr><td>TXN-88201</td><td>01 Mar 2026</td><td>ACC-2847</td><td>ACC-0041</td><td>₹9.85 Cr</td><td>RTGS</td><td><span class="risk-badge risk-high">Circular origin</span></td></tr>
+          <tr><td>TXN-88347</td><td>01 Mar 2026</td><td>ACC-0041</td><td>ACC-6628</td><td>₹9.62 Cr</td><td>RTGS</td><td><span class="risk-badge risk-high">Layering step 1</span></td></tr>
+          <tr><td>TXN-88512</td><td>02 Mar 2026</td><td>ACC-6628</td><td>ACC-9012</td><td>₹9.40 Cr</td><td>IMPS</td><td><span class="risk-badge risk-high">Layering step 2</span></td></tr>
+          <tr><td>TXN-88744</td><td>02 Mar 2026</td><td>ACC-9012</td><td>ACC-3354</td><td>₹9.18 Cr</td><td>NEFT</td><td><span class="risk-badge risk-medium">Profile mismatch</span></td></tr>
+          <tr><td>TXN-89001</td><td>03 Mar 2026</td><td>ACC-3354</td><td>ACC-2847</td><td>₹8.95 Cr</td><td>RTGS</td><td><span class="risk-badge risk-high">Circular return</span></td></tr>
+          <tr><td>TXN-89104</td><td>03 Mar 2026</td><td>ACC-9012</td><td>External</td><td>₹4.82 Cr</td><td>SWIFT</td><td><span class="risk-badge risk-high">Cross-border exit</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="report-card">
+      <div class="report-h2">Section 3 — Pattern Analysis (ML Model Output)</div>
+      <div class="pattern-item p-high"><div class="pattern-name">Round-trip circular transaction</div><div class="pattern-desc">Funds complete a full cycle: ACC-2847 → ACC-0041 → ACC-6628 → ACC-9012 → ACC-3354 → ACC-2847 within 72 hours. Confidence: 97.3%</div></div>
+      <div class="pattern-item p-high"><div class="pattern-name">Rapid layering through 5 accounts</div><div class="pattern-desc">5 sequential transfers within 3 days with systematic 2.3% deduction per hop. Classic ML layering signature. Confidence: 94.1%</div></div>
+      <div class="pattern-item p-high"><div class="pattern-name">Cross-border fund exit</div><div class="pattern-desc">₹4.82 Cr exited via SWIFT to UAE correspondent bank. Inconsistent with ACC-9012 declared business profile. Confidence: 91.6%</div></div>
+      <div class="pattern-item p-medium"><div class="pattern-name">Account profile–behaviour mismatch</div><div class="pattern-desc">ACC-9012 declared as personal savings account; actual transaction volume 43× expected for declared income bracket. Confidence: 88.7%</div></div>
+      <div class="evidence-box">
+        <strong>Automated Evidence Summary:</strong> Graph analytics identified a 5-node circular fund flow network completing one full cycle of approximately ₹48.2 Cr over 72 hours (1–3 Mar 2026). Funds entered via RTGS and exited partially via SWIFT to a UAE correspondent. Systematic per-hop value reduction of ~2.3% is consistent with fee-based layering intermediaries. Account ACC-9012 (personal savings) was used as a transit node inconsistent with its KYC profile. ML ensemble model (GNN + Isolation Forest) assigns a combined risk score of 91/100.
+      </div>
+    </div>
+
+    <div class="report-card">
+      <div class="report-h2">Section 4 — Reporting Institution Declaration</div>
+      <div style="font-size:12px; color:var(--color-text-secondary); line-height:1.8;">
+        Mumbai National Bank hereby reports the above transactions to the Financial Intelligence Unit – India (FIU-IND) under the provisions of the Prevention of Money Laundering Act (PMLA), 2002. This report is filed on the basis of internal transaction monitoring, graph-based fund flow analysis, and ML-assisted fraud detection systems.
+      </div>
+      <div style="margin-top:16px; display:flex; gap:10px;">
+        <button class="btn btn-primary" onclick="alert('STR submitted to FIU-IND portal successfully. Reference: STR/2026/03/0047')">Submit to FIU-IND</button>
+        <button class="btn" onclick="alert('Report exported as PDF')">Export PDF</button>
+        <button class="btn" onclick="alert('Case archived with evidence package')">Archive case</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+
+const ALERTS = [
+  { id:'ALT-0012', risk:'high', type:'Circular transaction', accounts:7, amount:'₹48.2 Cr', time:'16 Mar, 09:41', patterns:['circular','layering'] },
+  { id:'ALT-0011', risk:'high', type:'Rapid layering', accounts:5, amount:'₹31.7 Cr', time:'15 Mar, 23:14', patterns:['layering'] },
+  { id:'ALT-0010', risk:'high', type:'Cross-border exit', accounts:3, amount:'₹22.1 Cr', time:'15 Mar, 18:07', patterns:['layering','circular'] },
+  { id:'ALT-0009', risk:'medium', type:'Structuring detected', accounts:2, amount:'₹9.8 Cr', time:'15 Mar, 11:30', patterns:['structuring'] },
+  { id:'ALT-0008', risk:'medium', type:'Dormant reactivation', accounts:4, amount:'₹14.3 Cr', time:'14 Mar, 16:55', patterns:['dormant'] },
+  { id:'ALT-0007', risk:'low', type:'Unusual velocity', accounts:2, amount:'₹3.4 Cr', time:'14 Mar, 09:22', patterns:['structuring'] },
+];
+
+const GRAPHS = {
+  'ALT-0012': {
+    title: 'Fund Flow Network — Alert ALT-0012',
+    subtitle: 'Circular transaction pattern · 7 accounts · ₹48.2 Cr total flow',
+    riskScore: 91,
+    nodes: [
+      { id:0, label:'ACC-2847', name:'Rajan Enterprises', branch:'Mumbai-Fort', bal:'₹12.4 Cr', risk:91, txns:24, type:'high', x:0.5, y:0.18 },
+      { id:1, label:'ACC-0041', name:'R.K. Holdings', branch:'Mumbai-Bandra', bal:'₹3.2 Cr', risk:82, txns:18, type:'high', x:0.78, y:0.38 },
+      { id:2, label:'ACC-6628', name:'Vijay Trading', branch:'Pune-Camp', bal:'₹1.9 Cr', risk:76, txns:15, type:'high', x:0.7, y:0.72 },
+      { id:3, label:'ACC-9012', name:'Anita R. Shetty', branch:'Mumbai-Fort', bal:'₹0.8 Cr', risk:68, txns:31, type:'medium', x:0.35, y:0.82 },
+      { id:4, label:'ACC-3354', name:'FastBuild Infra', branch:'Navi Mumbai', bal:'₹5.1 Cr', risk:74, txns:12, type:'medium', x:0.14, y:0.55 },
+      { id:5, label:'ACC-1187', name:'Dormant Savings', branch:'Mumbai-Dadar', bal:'₹0.1 Cr', risk:45, txns:3, type:'dormant', x:0.25, y:0.32 },
+      { id:6, label:'EXT-SWIFT', name:'UAE Correspondent', branch:'External', bal:'N/A', risk:0, txns:2, type:'external', x:0.82, y:0.58 },
+    ],
+    edges: [
+      { from:0, to:1, amount:'₹9.85 Cr', suspicious:true },
+      { from:1, to:2, amount:'₹9.62 Cr', suspicious:true },
+      { from:2, to:3, amount:'₹9.40 Cr', suspicious:true },
+      { from:3, to:4, amount:'₹9.18 Cr', suspicious:true },
+      { from:4, to:0, amount:'₹8.95 Cr', suspicious:true },
+      { from:3, to:6, amount:'₹4.82 Cr', suspicious:true },
+      { from:5, to:0, amount:'₹0.9 Cr', suspicious:false },
+    ],
+    patterns: [
+      { cls:'p-high', name:'Round-trip circular flow', desc:'Complete cycle in 72 hrs, 5 hops' },
+      { cls:'p-high', name:'Rapid layering detected', desc:'2.3% deduction per hop — 97% confidence' },
+      { cls:'p-high', name:'Cross-border SWIFT exit', desc:'₹4.82 Cr to UAE — unexplained' },
+      { cls:'p-medium', name:'Profile mismatch (ACC-9012)', desc:'Personal a/c used for Cr-scale transfers' },
+    ],
+    stats: [
+      { label:'Total flow', val:'₹48.2 Cr', cls:'danger' },
+      { label:'Transactions', val:'24 in 72 hrs', cls:'danger' },
+      { label:'Hops', val:'5 accounts', cls:'warn' },
+      { label:'Exit via SWIFT', val:'₹4.82 Cr', cls:'danger' },
+      { label:'Time window', val:'72 hours', cls:'warn' },
+      { label:'Channels', val:'RTGS/IMPS/SWIFT', cls:'' },
+    ]
+  },
+  'ALT-0011': {
+    title: 'Fund Flow Network — Alert ALT-0011',
+    subtitle: 'Rapid layering · 5 accounts · ₹31.7 Cr total flow',
+    riskScore: 87,
+    nodes: [
+      { id:0, label:'ACC-1103', name:'K. Mehta Trading', branch:'Delhi-Connaught', bal:'₹8.2 Cr', risk:87, txns:19, type:'high', x:0.2, y:0.2 },
+      { id:1, label:'ACC-4402', name:'Mehta Securities', branch:'Delhi-Nehru Place', bal:'₹4.1 Cr', risk:71, txns:14, type:'medium', x:0.55, y:0.15 },
+      { id:2, label:'ACC-7721', name:'Delhi Cash Co.', branch:'Delhi-Lajpat', bal:'₹2.2 Cr', risk:65, txns:11, type:'medium', x:0.8, y:0.42 },
+      { id:3, label:'ACC-8834', name:'Dormant Corp.', branch:'Gurugram', bal:'₹0.3 Cr', risk:55, txns:4, type:'dormant', x:0.62, y:0.72 },
+      { id:4, label:'ACC-2201', name:'N. Sharma Retail', branch:'Delhi-Karol Bagh', bal:'₹1.5 Cr', risk:60, txns:9, type:'medium', x:0.28, y:0.72 },
+    ],
+    edges: [
+      { from:0, to:1, amount:'₹11.2 Cr', suspicious:true },
+      { from:1, to:2, amount:'₹10.8 Cr', suspicious:true },
+      { from:2, to:3, amount:'₹5.4 Cr', suspicious:true },
+      { from:3, to:4, amount:'₹4.3 Cr', suspicious:true },
+      { from:0, to:4, amount:'₹2.1 Cr', suspicious:false },
+    ],
+    patterns: [
+      { cls:'p-high', name:'Rapid layering — 4 hops', desc:'₹31.7 Cr pushed through in 48 hrs' },
+      { cls:'p-medium', name:'Dormant account used', desc:'ACC-8834 inactive 2yr, suddenly active' },
+      { cls:'p-medium', name:'Below-threshold splits', desc:'Multiple ₹9.8L transactions detected' },
+    ],
+    stats: [
+      { label:'Total flow', val:'₹31.7 Cr', cls:'danger' },
+      { label:'Transactions', val:'16 in 48 hrs', cls:'danger' },
+      { label:'Dormant accounts', val:'1 reactivated', cls:'warn' },
+      { label:'Time window', val:'48 hours', cls:'warn' },
+    ]
+  }
+};
+
+// ─── STATE ─────────────────────────────────────────────────────────────────
+let selectedAlert = 'ALT-0012';
+let graphData = GRAPHS['ALT-0012'];
+let canvasW = 0, canvasH = 0;
+let hoveredNode = null;
+let pan = { x:0, y:0 };
+let dragging = false;
+let lastMouse = null;
+let traceMode = false;
+let tracedNodes = new Set();
+
+// ─── TABS ───────────────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.nav-tab').forEach((el,i) => {
+    const tabs = ['graph','dashboard','report'];
+    el.classList.toggle('active', tabs[i] === t);
+  });
+  document.getElementById('tab-graph').style.display = t==='graph' ? 'flex' : 'none';
+  document.getElementById('tab-dashboard').classList.toggle('active', t==='dashboard');
+  document.getElementById('tab-report').classList.toggle('active', t==='report');
+}
+
+// ─── ALERT LIST ─────────────────────────────────────────────────────────────
+function buildAlertList() {
+  const el = document.getElementById('alert-list');
+  el.innerHTML = ALERTS.map(a => `
+    <div class="alert-item ${a.risk} ${selectedAlert===a.id?'selected':''}" onclick="selectAlert('${a.id}')">
+      <div class="alert-header">
+        <span class="alert-id">${a.id}</span>
+        <span class="risk-badge risk-${a.risk}">${a.risk.toUpperCase()}</span>
+      </div>
+      <div class="alert-type">${a.type}</div>
+      <div class="alert-meta">${a.accounts} accounts · ${a.amount} · ${a.time}</div>
+    </div>`).join('');
+}
+
+function selectAlert(id) {
+  selectedAlert = id;
+  graphData = GRAPHS[id] || GRAPHS['ALT-0012'];
+  traceMode = false;
+  tracedNodes.clear();
+  pan = { x:0, y:0 };
+  buildAlertList();
+  renderGraph();
+  updateRightPanel();
+}
+
+// ─── RIGHT PANEL ────────────────────────────────────────────────────────────
+function updateRightPanel() {
+  const d = graphData;
+  // Risk score
+  document.getElementById('risk-score').textContent = d.riskScore;
+  const fill = document.getElementById('gauge-fill');
+  fill.style.width = d.riskScore + '%';
+  fill.style.background = d.riskScore > 80 ? '#E24B4A' : d.riskScore > 60 ? '#EF9F27' : '#378ADD';
+
+  // Patterns
+  document.getElementById('pattern-list').innerHTML = d.patterns.map(p =>
+    `<div class="pattern-item ${p.cls}"><div class="pattern-name">${p.name}</div><div class="pattern-desc">${p.desc}</div></div>`
+  ).join('');
+
+  // Stats
+  document.getElementById('txn-stats').innerHTML = `<div style="display:flex;flex-direction:column;">` +
+    d.stats.map(s => `<div class="stat-row"><span class="stat-label">${s.label}</span><span class="stat-val ${s.cls}">${s.val}</span></div>`).join('') + `</div>`;
+
+  // Title
+  document.getElementById('graph-title').textContent = d.title;
+  document.getElementById('graph-subtitle').textContent = d.subtitle;
+}
+
+// ─── GRAPH RENDERER ─────────────────────────────────────────────────────────
+const COLORS = {
+  high: '#E24B4A',
+  medium: '#EF9F27',
+  normal: '#378ADD',
+  dormant: '#888780',
+  external: '#5DCAA5'
+};
+
+function renderGraph() {
+  const canvas = document.getElementById('graphCanvas');
+  const ctx = canvas.getContext('2d');
+  const wrap = canvas.parentElement;
+  canvas.width = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  canvasW = canvas.width;
+  canvasH = canvas.height;
+
+  ctx.clearRect(0, 0, canvasW, canvasH);
+
+  // Grid background
+  ctx.strokeStyle = 'rgba(0,0,0,0.04)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < canvasW; x += 40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvasH); ctx.stroke(); }
+  for (let y = 0; y < canvasH; y += 40) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvasW,y); ctx.stroke(); }
+
+  const d = graphData;
+  const nodes = d.nodes.map(n => ({
+    ...n,
+    cx: n.x * (canvasW - 120) + 60 + pan.x,
+    cy: n.y * (canvasH - 100) + 50 + pan.y
+  }));
+
+  // Active filters
+  const fCircular = document.getElementById('f-circular').checked;
+  const fLayering = document.getElementById('f-layering').checked;
+
+  // Draw edges
+  d.edges.forEach(e => {
+    const fn = nodes[e.from], tn = nodes[e.to];
+    const dx = tn.cx - fn.cx, dy = tn.cy - fn.cy;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    const r = 22;
+    const sx = fn.cx + dx/len*r, sy = fn.cy + dy/len*r;
+    const ex = tn.cx - dx/len*r, ey = tn.cy - dy/len*r;
+
+    ctx.beginPath();
+    // Curved edge
+    const mx = (sx+ex)/2 - dy*0.15, my = (sy+ey)/2 + dx*0.15;
+    ctx.moveTo(sx, sy);
+    ctx.quadraticCurveTo(mx, my, ex, ey);
+    ctx.lineWidth = e.suspicious ? 2 : 1;
+    ctx.strokeStyle = e.suspicious ? '#E24B4A' : '#B4B2A9';
+    ctx.globalAlpha = traceMode ? (tracedNodes.has(e.from)&&tracedNodes.has(e.to)?1:0.15) : 1;
+    ctx.stroke();
+
+    // Arrow head
+    const angle = Math.atan2(ey-my, ex-mx);
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(ex - 10*Math.cos(angle-0.4), ey - 10*Math.sin(angle-0.4));
+    ctx.lineTo(ex - 10*Math.cos(angle+0.4), ey - 10*Math.sin(angle+0.4));
+    ctx.closePath();
+    ctx.fillStyle = e.suspicious ? '#E24B4A' : '#B4B2A9';
+    ctx.fill();
+
+    // Amount label
+    if (!traceMode || (tracedNodes.has(e.from)&&tracedNodes.has(e.to))) {
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = 'var(--color-text-secondary, #5f5e5a)';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(e.amount, mx, my - 6);
+    }
+    ctx.globalAlpha = 1;
+  });
+
+  // Draw nodes
+  nodes.forEach(n => {
+    const isHovered = hoveredNode === n.id;
+    const isTraced = tracedNodes.has(n.id);
+    const alpha = traceMode ? (isTraced ? 1 : 0.25) : 1;
+    ctx.globalAlpha = alpha;
+
+    const r = isHovered ? 26 : 22;
+    const color = COLORS[n.type] || COLORS.normal;
+
+    // Outer glow for suspicious
+    if (n.type === 'high' && !traceMode) {
+      ctx.beginPath();
+      ctx.arc(n.cx, n.cy, r+6, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(226,75,74,0.12)';
+      ctx.fill();
+    }
+
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(n.cx, n.cy, r, 0, Math.PI*2);
+    ctx.fillStyle = color + '22';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = isHovered ? 2.5 : 1.5;
+    ctx.stroke();
+
+    // Inner fill
+    ctx.beginPath();
+    ctx.arc(n.cx, n.cy, r-4, 0, Math.PI*2);
+    ctx.fillStyle = color + '33';
+    ctx.fill();
+
+    // Label
+    ctx.fillStyle = 'var(--color-text-primary, #1a1a18)';
+    ctx.font = `${isHovered?'500 ':''} 11px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(n.label, n.cx, n.cy + r + 14);
+
+    ctx.globalAlpha = 1;
+  });
+}
+
+// ─── INTERACTIONS ───────────────────────────────────────────────────────────
+function getNodeAt(mx, my) {
+  const d = graphData;
+  for (const n of d.nodes) {
+    const cx = n.x*(canvasW-120)+60+pan.x, cy = n.y*(canvasH-100)+50+pan.y;
+    const dist = Math.sqrt((mx-cx)**2+(my-cy)**2);
+    if (dist < 28) return { ...n, cx, cy };
+  }
+  return null;
+}
+
+const canvas = document.getElementById('graphCanvas');
+const tooltip = document.getElementById('tooltip');
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+
+  if (dragging && lastMouse) {
+    pan.x += mx - lastMouse.x;
+    pan.y += my - lastMouse.y;
+    lastMouse = { x:mx, y:my };
+    renderGraph();
+    return;
+  }
+
+  const node = getNodeAt(mx, my);
+  hoveredNode = node ? node.id : null;
+
+  if (node) {
+    tooltip.classList.add('visible');
+    tooltip.style.left = (mx + 20) + 'px';
+    tooltip.style.top = (my - 20) + 'px';
+    document.getElementById('tt-name').textContent = node.name;
+    document.getElementById('tt-acc').textContent = node.label;
+    document.getElementById('tt-branch').textContent = node.branch;
+    document.getElementById('tt-bal').textContent = node.bal;
+    const riskEl = document.getElementById('tt-risk');
+    riskEl.textContent = node.risk > 0 ? node.risk + '/100' : 'N/A';
+    riskEl.style.color = node.risk > 80 ? '#A32D2D' : node.risk > 60 ? '#854F0B' : '#185FA5';
+    document.getElementById('tt-txn').textContent = node.txns + ' transactions';
+    canvas.style.cursor = 'pointer';
+  } else {
+    tooltip.classList.remove('visible');
+    canvas.style.cursor = dragging ? 'grabbing' : 'grab';
+  }
+  renderGraph();
+});
+
+canvas.addEventListener('mousedown', e => {
+  dragging = true;
+  const rect = canvas.getBoundingClientRect();
+  lastMouse = { x: e.clientX-rect.left, y: e.clientY-rect.top };
+});
+
+canvas.addEventListener('mouseup', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX-rect.left, my = e.clientY-rect.top;
+  const dx = lastMouse ? Math.abs(mx-lastMouse.x) : 0, dy = lastMouse ? Math.abs(my-lastMouse.y) : 0;
+  if (dx < 4 && dy < 4) {
+    // Click
+    const node = getNodeAt(mx, my);
+    if (node && traceMode) {
+      tracedNodes.has(node.id) ? tracedNodes.delete(node.id) : tracedNodes.add(node.id);
+      renderGraph();
+    }
+  }
+  dragging = false;
+  lastMouse = null;
+});
+
+canvas.addEventListener('mouseleave', () => {
+  dragging = false;
+  tooltip.classList.remove('visible');
+  hoveredNode = null;
+  renderGraph();
+});
+
+function resetZoom() { pan = {x:0,y:0}; traceMode=false; tracedNodes.clear(); renderGraph(); }
+
+function traceFullPath() {
+  traceMode = !traceMode;
+  if (traceMode) {
+    tracedNodes = new Set(graphData.nodes.filter(n=>n.type==='high').map(n=>n.id));
+  } else {
+    tracedNodes.clear();
+  }
+  renderGraph();
+}
+
+function updateAmountFilter(v) {
+  document.getElementById('amount-label').textContent = v==0?'₹0 (all)':'₹'+v+'L+';
+  renderGraph();
+}
+
+// ─── MINI BAR CHART ─────────────────────────────────────────────────────────
+function buildBarChart() {
+  const data = [12,18,9,14,22,11,8,19,31,24,17,28,38,41];
+  const max = Math.max(...data);
+  const el = document.getElementById('bar-chart');
+  el.innerHTML = data.map((v,i) => {
+    const h = Math.round((v/max)*56);
+    const cls = v > 30 ? 'alert' : v > 20 ? 'warn' : '';
+    return `<div class="mini-bar ${cls}" style="height:${h}px;" title="${v} alerts"></div>`;
+  }).join('');
+}
+
+// ─── DOUGHNUT ───────────────────────────────────────────────────────────────
+function buildDoughnut() {
+  new Chart(document.getElementById('doughnutChart'), {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [34, 28, 22, 16],
+        backgroundColor: ['#E24B4A','#EF9F27','#378ADD','#888780'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    }
+  });
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+buildAlertList();
+updateRightPanel();
+buildBarChart();
+buildDoughnut();
+
+// Initial render after layout
+setTimeout(() => {
+  renderGraph();
+}, 80);
+
+window.addEventListener('resize', () => {
+  renderGraph();
+});
+</script>
+</body>
+</html>

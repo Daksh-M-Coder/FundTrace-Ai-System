@@ -1,0 +1,137 @@
+[
+  {
+    "label": "Officer login",
+    "status": "PASS",
+    "note": "status=200"
+  },
+  {
+    "label": "HTTP 200",
+    "status": "PASS",
+    "note": "got 200"
+  },
+  {
+    "label": "success=true",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply not empty",
+    "status": "PASS",
+    "note": "len=1934"
+  },
+  {
+    "label": "No hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "HTTP 200",
+    "status": "PASS",
+    "note": "got 200"
+  },
+  {
+    "label": "success=true",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply not empty",
+    "status": "PASS",
+    "note": "len=2061"
+  },
+  {
+    "label": "No hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "HTTP 200",
+    "status": "PASS",
+    "note": "got 200"
+  },
+  {
+    "label": "success=true",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply not empty",
+    "status": "PASS",
+    "note": "len=1186"
+  },
+  {
+    "label": "No hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "HTTP 200",
+    "status": "PASS",
+    "note": "got 200"
+  },
+  {
+    "label": "success=true",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply not empty",
+    "status": "PASS",
+    "note": "len=860"
+  },
+  {
+    "label": "No hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "HTTP 200",
+    "status": "PASS",
+    "note": "got 200"
+  },
+  {
+    "label": "success=true",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply not empty",
+    "status": "PASS",
+    "note": "len=1036"
+  },
+  {
+    "label": "No hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "HTTP 200",
+    "status": "PASS",
+    "note": "got 200"
+  },
+  {
+    "label": "success=true",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply not empty",
+    "status": "PASS",
+    "note": "len=2883"
+  },
+  {
+    "label": "No hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "HTTP 200 for risk score Q",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Reply mentions FT-67GMY9 or ABC",
+    "status": "PASS",
+    "note": "AI doesn't reference the account"
+  }
+]

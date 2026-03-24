@@ -1,0 +1,167 @@
+[
+  {
+    "label": "Login succeeds",
+    "status": "PASS",
+    "note": "status=200"
+  },
+  {
+    "label": "Status 200",
+    "status": "PASS",
+    "note": "got 200"
+  },
+  {
+    "label": "Has transactions array",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Has accounts for dropdown",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Has total count",
+    "status": "PASS",
+    "note": "total=13"
+  },
+  {
+    "label": "Has channels breakdown",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Column 'txn_id' present",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Column 'txn_date' present",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Column 'sender_name' present",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Column 'sender_code' present",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Column 'receiver_name' present",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Column 'receiver_code' present",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Column 'amount' present",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Column 'channel' present",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Column 'status' present",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Column 'fraud_score' present",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Status 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Returns rows",
+    "status": "PASS",
+    "note": "count=9"
+  },
+  {
+    "label": "All rows involve FT-67GMY9",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Status 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Sorted amount DESC",
+    "status": "PASS",
+    "note": "500000 >= 500000"
+  },
+  {
+    "label": "404 for unknown account",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Status 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Content-Type text/csv",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Content-Disposition attachment",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Filename ends .csv",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "CSV has header row",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "CSV has data rows",
+    "status": "PASS",
+    "note": "10 lines"
+  },
+  {
+    "label": "Status 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Content-Disposition attachment .json",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Has exported_at",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "Has count",
+    "status": "PASS",
+    "note": "count=13"
+  },
+  {
+    "label": "Has transactions array",
+    "status": "PASS",
+    "note": ""
+  }
+]

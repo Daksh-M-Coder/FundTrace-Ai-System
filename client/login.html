@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — FundTrace Bank</title>
+<link rel="stylesheet" href="/client/css/app.css">
+<style>
+  body { background: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .auth-wrap { width: 100%; max-width: 400px; padding: 20px; }
+  .auth-logo { text-align: center; margin-bottom: 28px; }
+  .auth-logo-mark { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 600; }
+  .auth-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
+  .auth-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .auth-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+  .auth-footer { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text2); }
+  .auth-footer a { color: var(--text); font-weight: 500; }
+  .password-wrap { position: relative; }
+  .password-wrap .form-input { padding-right: 44px; }
+  .toggle-pw { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text3); font-size: 16px; background: none; border: none; }
+  .global-error { background: var(--danger-bg); color: var(--danger-text); border: 0.5px solid var(--danger); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .global-error.visible { display: block; }
+  .officer-link { text-align: center; margin-top: 16px; font-size: 12px; color: var(--text3); }
+</style>
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-logo">
+    <div class="auth-logo-mark"><span style="width:10px;height:10px;border-radius:50%;background:var(--danger);display:inline-block;"></span> FundTrace Bank</div>
+  </div>
+
+  <div class="auth-card">
+    <div class="auth-title">Welcome back</div>
+    <div class="auth-sub">Sign in to your account</div>
+
+    <div class="global-error" id="globalError"></div>
+
+    <div class="form-group">
+      <label class="form-label" for="identifier">Email or mobile number</label>
+      <input type="text" id="identifier" class="form-input" placeholder="you@example.com or 9876543210" autocomplete="username">
+      <div class="form-error" id="emailError"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="password">Password</label>
+      <div class="password-wrap">
+        <input type="password" id="password" class="form-input" placeholder="Enter your password" autocomplete="current-password">
+        <button class="toggle-pw" type="button" onclick="togglePw()" id="togglePwBtn">👁</button>
+      </div>
+      <div class="form-error" id="passwordError"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="coupon">Coupon code (optional)</label>
+      <input type="text" id="coupon" class="form-input" placeholder="CP-XXXXXX">
+    </div>
+
+    <button class="btn btn-primary btn-full" id="loginBtn" onclick="handleLogin()">Sign in</button>
+  </div>
+
+  <div class="auth-footer">
+    Don't have an account? <a href="/client/register.html">Create one</a>
+  </div>
+  <div class="officer-link">
+    Bank officer? <a href="/officer/login.html" style="color:var(--text2);">Officer portal →</a>
+  </div>
+</div>
+
+<script src="/client/js/api.js"></script>
+<script>
+  // If already logged in, redirect
+  getUser().then(user => {
+    if (user) {
+      window.location.href = user.role === 'officer' ? '/officer/dashboard.html' : '/client/dashboard.html';
+    }
+  });
+
+  function togglePw() {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    document.getElementById('togglePwBtn').textContent = inp.type === 'password' ? '👁' : '🙈';
+  }
+
+  async function handleLogin() {
+    const identifier = document.getElementById('identifier').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('loginBtn');
+
+    // Clear errors
+    clearError('emailError'); clearError('passwordError');
+    document.getElementById('globalError').classList.remove('visible');
+
+    // Basic validation
+    if (!identifier) { showError('emailError', 'Email or mobile is required'); return; }
+    if (!password) { showError('passwordError', 'Password is required'); return; }
+
+    setLoading(btn, true, 'Signing in...');
+    try {
+      // identifier already captured above
+      const { user } = await api.post('/auth/login', { identifier, password });
+      const coupon = document.getElementById('coupon').value.trim();
+      if (coupon) {
+        try {
+          const res = await api.post('/coupons/redeem', { code: coupon });
+          showToast('Coupon redeemed. New balance: ₹' + parseFloat(res.new_balance).toLocaleString('en-IN',{minimumFractionDigits:2}), 'success');
+        } catch (e) {
+          showToast(e.message, 'error');
+        }
+      }
+      showToast('Welcome back, ' + user.full_name.split(' ')[0] + '!', 'success');
+      setTimeout(() => {
+        window.location.href = user.role === 'officer' ? '/officer/dashboard.html' : '/client/dashboard.html';
+      }, 600);
+    } catch (err) {
+      const errEl = document.getElementById('globalError');
+      errEl.textContent = err.message;
+      errEl.classList.add('visible');
+      setLoading(btn, false);
+    }
+  }
+
+  // Allow Enter key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') handleLogin();
+  });
+</script>
+</body>
+</html>

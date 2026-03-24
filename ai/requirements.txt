@@ -1,0 +1,22 @@
+# FraudSense AI — Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# ─── REQUIRED ──────────────────────────────────────────────────────────────────
+# The core agent uses the Groq SDK for LLM calls (raw urllib hits Cloudflare block)
+groq>=1.1.0           # Official Groq Python SDK — required for Groq backend
+
+# ─── OPTIONAL (core agent works without these) ─────────────────────────────────
+# The rest of the agent uses only Python stdlib:
+#   json, sqlite3, os, sys, re, pathlib, datetime, time
+#   http.server, urllib.request, argparse, csv
+
+# Optional: for future ML training pipeline
+# scikit-learn>=1.4.0    # Isolation Forest, XGBoost
+# pandas>=2.0.0          # DataFrame handling for training data export
+# numpy>=1.26.0          # Numeric operations
+
+# Optional: for vector similarity search (Phase 2 relevance filtering)
+# faiss-cpu>=1.7.4       # Facebook AI Similarity Search (local, free)
+
+# Quick install:
+#   pip install groq

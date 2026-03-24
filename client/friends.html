@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connections — FundTrace Bank</title>
+<link rel="stylesheet" href="/client/css/app.css">
+<style>
+  .id-card { background: var(--accent); color: #fff; border-radius: var(--radius); padding: 20px; margin-bottom: 24px; display:flex; align-items:center; justify-content:space-between; }
+  .id-label { font-size:12px; opacity:0.6; margin-bottom:4px; }
+  .id-code { font-size:24px; font-weight:700; letter-spacing:2px; }
+  .tabs { display:flex; gap:4px; margin-bottom:20px; background:var(--surface2); padding:4px; border-radius:var(--radius-sm); width:fit-content; }
+  .tab { padding:6px 16px; border-radius:5px; font-size:13px; cursor:pointer; color:var(--text2); border:none; background:transparent; font-family:inherit; transition:all 0.15s; }
+  .tab.active { background:var(--surface); color:var(--text); font-weight:500; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+  .request-item { display:flex; align-items:center; gap:12px; padding:14px; background:var(--surface); border:0.5px solid var(--border); border-radius:var(--radius-sm); margin-bottom:8px; }
+  .request-actions { margin-left:auto; display:flex; gap:8px; }
+  .search-bar { display:flex; gap:8px; margin-bottom:20px; }
+  .badge-pending { background:var(--warn-bg); color:var(--warn-text); font-size:10px; font-weight:500; padding:2px 8px; border-radius:20px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo"><span class="logo-dot"></span> FundTrace Bank</div>
+  <nav style="display:flex; gap:4px; margin-left:16px;">
+    <a href="/client/dashboard.html" class="nav-item" style="padding:6px 12px; font-size:13px;">Dashboard</a>
+    <a href="/client/transactions.html" class="nav-item" style="padding:6px 12px; font-size:13px;">Transactions</a>
+    <a href="/client/friends.html" class="nav-item active" style="padding:6px 12px; font-size:13px;">Connections</a>
+  </nav>
+  <div class="topbar-right">
+    <span class="topbar-name" id="topbarName">—</span>
+    <button class="btn btn-sm" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+<div style="max-width:800px; margin:0 auto; padding:24px;">
+  <div class="page-header">
+    <div class="page-title">Connections</div>
+    <div class="page-subtitle">Connect with friends and family to send money instantly</div>
+  </div>
+
+  <!-- My ID card -->
+  <div class="id-card">
+    <div>
+      <div class="id-label">Your FundTrace ID — share this to receive requests</div>
+      <div class="id-code" id="myCode">Loading...</div>
+      <div style="font-size:12px; opacity:0.6; margin-top:4px;" id="myName">—</div>
+    </div>
+    <button class="btn" style="background:rgba(255,255,255,0.2); border-color:rgba(255,255,255,0.3); color:#fff;" onclick="copyMyId()">📋 Copy ID</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('friends', this)">Friends <span id="friendsCount" style="opacity:0.5;font-size:11px;"></span></button>
+    <button class="tab" onclick="switchTab('requests', this)">Requests <span id="requestsCount" style="opacity:0.5;font-size:11px;"></span></button>
+    <button class="tab" onclick="switchTab('add', this)">Add Connection</button>
+  </div>
+
+  <!-- Friends tab -->
+  <div id="tab-friends">
+    <div id="friendsList">
+      <div style="text-align:center;padding:20px;color:var(--text3);"><span class="spinner"></span></div>
+    </div>
+  </div>
+
+  <!-- Requests tab -->
+  <div id="tab-requests" style="display:none;">
+    <div id="incomingSection">
+      <div style="font-size:13px; font-weight:500; color:var(--text2); margin-bottom:10px;">Incoming requests</div>
+      <div id="incomingList"></div>
+    </div>
+    <div style="margin-top:20px;" id="outgoingSection">
+      <div style="font-size:13px; font-weight:500; color:var(--text2); margin-bottom:10px;">Sent requests</div>
+      <div id="outgoingList"></div>
+    </div>
+  </div>
+
+  <!-- Add connection tab -->
+  <div id="tab-add" style="display:none;">
+    <div class="card" style="max-width:440px;">
+      <div class="card-title">Add by FundTrace ID</div>
+      <div class="form-group">
+        <label class="form-label">Enter their FundTrace ID (FT-XXXXXX)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="addCodeInput" class="form-input" placeholder="FT-XXXXXX" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+          <button class="btn btn-primary" onclick="previewUser()">Find</button>
+        </div>
+        <div class="form-error" id="addError"></div>
+      </div>
+
+      <div id="addPreview" style="display:none;">
+        <div class="friend-card" style="margin-bottom:12px;">
+          <div class="avatar" id="previewAvatar">?</div>
+          <div>
+            <div class="friend-name" id="previewName">—</div>
+            <div class="friend-meta" id="previewMeta">—</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" id="sendRequestBtn" onclick="sendRequest()">Send connection request</button>
+      </div>
+    </div>
+
+    <div class="card" style="max-width:440px; margin-top:16px;">
+      <div class="card-title">Search by name</div>
+      <div class="form-group">
+        <input type="text" id="nameSearch" class="form-input" placeholder="Search by name..." oninput="debounceNameSearch(this.value)">
+      </div>
+      <div id="searchResults"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/client/js/api.js"></script>
+<script>
+let currentUser = null;
+let previewedUser = null;
+let nameSearchTimeout = null;
+
+async function init() {
+  currentUser = await requireLogin('client');
+  if (!currentUser) return;
+  document.getElementById('topbarName').textContent = currentUser.full_name.split(' ')[0];
+  document.getElementById('myCode').textContent = currentUser.unique_code;
+  document.getElementById('myName').textContent = currentUser.full_name + ' · ' + currentUser.account_number;
+  loadFriends();
+  loadRequests();
+
+  initSocket({
+    onFriendRequest: () => loadRequests(),
+    onFriendAccepted: () => loadFriends()
+  });
+}
+
+function switchTab(tab, btn) {
+  ['friends','requests','add'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = 'none';
+  });
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).style.display = 'block';
+  btn.classList.add('active');
+}
+
+async function loadFriends() {
+  try {
+    const { friends } = await api.get('/social/list');
+    document.getElementById('friendsCount').textContent = friends.length ? `(${friends.length})` : '';
+    if (!friends.length) {
+      document.getElementById('friendsList').innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">No connections yet. Add friends to send money instantly.</div></div>';
+      return;
+    }
+    document.getElementById('friendsList').innerHTML = friends.map(f => `
+      <div class="friend-card" style="margin-bottom:8px;">
+        <div class="avatar">${initials(f.full_name)}</div>
+        <div>
+          <div class="friend-name">${f.full_name}</div>
+          <div class="friend-meta">${f.unique_code} · ${f.account_number} · ${f.branch}</div>
+        </div>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+          <button class="btn btn-sm btn-primary" onclick="quickSend('${f.unique_code}', '${f.full_name}')">Send</button>
+          <button class="btn btn-sm" onclick="removeFriend(${f.friend_id})">Remove</button>
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    document.getElementById('friendsList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Failed to load friends</div></div>';
+  }
+}
+
+async function loadRequests() {
+  try {
+    const { incoming, outgoing } = await api.get('/social/requests');
+    const total = incoming.length + outgoing.length;
+    document.getElementById('requestsCount').textContent = total ? `(${total})` : '';
+
+    document.getElementById('incomingList').innerHTML = incoming.length ? incoming.map(r => `
+      <div class="request-item">
+        <div class="avatar">${initials(r.full_name)}</div>
+        <div>
+          <div class="friend-name">${r.full_name}</div>
+          <div class="friend-meta">${r.unique_code} · Sent ${timeAgo(r.created_at)}</div>
+        </div>
+        <div class="request-actions">
+          <button class="btn btn-sm btn-success" onclick="respond(${r.id}, 'accept')">Accept</button>
+          <button class="btn btn-sm" onclick="respond(${r.id}, 'reject')">Decline</button>
+        </div>
+      </div>`).join('') : '<div class="text-muted text-sm" style="padding:12px 0;">No incoming requests</div>';
+
+    document.getElementById('outgoingList').innerHTML = outgoing.length ? outgoing.map(r => `
+      <div class="request-item">
+        <div class="avatar">${initials(r.full_name)}</div>
+        <div>
+          <div class="friend-name">${r.full_name}</div>
+          <div class="friend-meta">${r.unique_code} · Sent ${timeAgo(r.created_at)}</div>
+        </div>
+        <span class="badge-pending">Pending</span>
+      </div>`).join('') : '<div class="text-muted text-sm" style="padding:12px 0;">No sent requests</div>';
+  } catch (e) {}
+}
+
+async function previewUser() {
+  const code = document.getElementById('addCodeInput').value.trim().toUpperCase();
+  clearError('addError');
+  if (!code.startsWith('FT-') || code.length < 6) { showError('addError', 'Please enter a valid FundTrace ID (FT-XXXXXX)'); return; }
+  try {
+    const { user } = await api.get('/transactions/lookup?query=' + encodeURIComponent(code));
+    previewedUser = user;
+    document.getElementById('addPreview').style.display = 'block';
+    document.getElementById('previewAvatar').textContent = initials(user.full_name);
+    document.getElementById('previewName').textContent = user.full_name;
+    document.getElementById('previewMeta').textContent = user.unique_code + ' · ' + user.account_number;
+  } catch (e) {
+    showError('addError', e.message);
+    document.getElementById('addPreview').style.display = 'none';
+  }
+}
+
+async function sendRequest() {
+  if (!previewedUser) return;
+  const btn = document.getElementById('sendRequestBtn');
+  setLoading(btn, true, 'Sending...');
+  try {
+    const { message } = await api.post('/social/request', { unique_code: previewedUser.unique_code });
+    showToast(message, 'success');
+    document.getElementById('addPreview').style.display = 'none';
+    document.getElementById('addCodeInput').value = '';
+    loadRequests();
+  } catch (e) {
+    showToast(e.message, 'error');
+    setLoading(btn, false);
+  }
+}
+
+async function respond(requestId, action) {
+  try {
+    await api.post('/social/respond', { request_id: requestId, action });
+    showToast(action === 'accept' ? 'Connection accepted!' : 'Request declined', action === 'accept' ? 'success' : 'info');
+    loadFriends();
+    loadRequests();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function removeFriend(friendId) {
+  if (!confirm('Remove this connection?')) return;
+  try {
+    await api.del('/social/remove/' + friendId);
+    showToast('Connection removed', 'info');
+    loadFriends();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+function quickSend(code, name) {
+  window.location.href = '/client/dashboard.html';
+  sessionStorage.setItem('quickSend', JSON.stringify({ code, name }));
+}
+
+function debounceNameSearch(val) {
+  clearTimeout(nameSearchTimeout);
+  if (val.length < 2) { document.getElementById('searchResults').innerHTML = ''; return; }
+  nameSearchTimeout = setTimeout(() => nameSearch(val), 500);
+}
+
+async function nameSearch(val) {
+  try {
+    const { results } = await api.get('/social/search?q=' + encodeURIComponent(val));
+    if (!results.length) { document.getElementById('searchResults').innerHTML = '<div class="text-muted text-sm">No results found</div>'; return; }
+    document.getElementById('searchResults').innerHTML = results.map(u => `
+      <div class="friend-card" style="margin-bottom:8px;">
+        <div class="avatar">${initials(u.full_name)}</div>
+        <div>
+          <div class="friend-name">${u.full_name}</div>
+          <div class="friend-meta">${u.unique_code} · ${u.branch}</div>
+        </div>
+        <button class="btn btn-sm btn-primary" style="margin-left:auto;" onclick="sendRequestByCode('${u.unique_code}')">Add</button>
+      </div>`).join('');
+  } catch (e) {}
+}
+
+async function sendRequestByCode(code) {
+  try {
+    const { message } = await api.post('/social/request', { unique_code: code });
+    showToast(message, 'success');
+    loadRequests();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+function copyMyId() {
+  if (!currentUser) return;
+  navigator.clipboard.writeText(currentUser.unique_code).then(() => showToast('Your ID copied!', 'success'));
+}
+
+init();
+</script>
+</body>
+</html>

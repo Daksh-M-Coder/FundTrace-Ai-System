@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register — FundTrace Bank</title>
+<link rel="stylesheet" href="/client/css/app.css">
+<style>
+  body { background: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .auth-wrap { width: 100%; max-width: 460px; }
+  .auth-logo { text-align: center; margin-bottom: 24px; }
+  .auth-logo-mark { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 600; }
+  .auth-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
+  .auth-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .auth-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+  .auth-footer { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text2); }
+  .auth-footer a { color: var(--text); font-weight: 500; }
+  .password-wrap { position: relative; }
+  .password-wrap .form-input { padding-right: 44px; }
+  .toggle-pw { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text3); font-size: 16px; background: none; border: none; }
+  .global-error { background: var(--danger-bg); color: var(--danger-text); border: 0.5px solid var(--danger); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .global-error.visible { display: block; }
+  .pw-strength { margin-top: 6px; display: flex; gap: 4px; }
+  .pw-bar { height: 3px; flex: 1; border-radius: 2px; background: var(--border); transition: background 0.2s; }
+  .pw-bar.weak { background: var(--danger); }
+  .pw-bar.medium { background: var(--warn); }
+  .pw-bar.strong { background: var(--success); }
+  .pw-hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+  .bonus-banner { background: var(--success-bg); color: var(--success-text); border: 0.5px solid #9FE1CB; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+</style>
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-logo">
+    <div class="auth-logo-mark"><span style="width:10px;height:10px;border-radius:50%;background:var(--danger);display:inline-block;"></span> FundTrace Bank</div>
+  </div>
+
+  <div class="auth-card">
+    <div class="auth-title">Create your account</div>
+    <div class="auth-sub">Free account · Instant approval</div>
+
+    <div class="bonus-banner">🎁 Get ₹10,000 welcome bonus on joining</div>
+
+    <div class="global-error" id="globalError"></div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Full name *</label>
+        <input type="text" id="full_name" class="form-input" placeholder="Arjun Sharma" autocomplete="name">
+        <div class="form-error" id="nameError"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone number *</label>
+        <input type="tel" id="phone" class="form-input" placeholder="+91 9876543210" autocomplete="tel">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Email address *</label>
+      <input type="email" id="email" class="form-input" placeholder="you@example.com" autocomplete="email">
+      <div class="form-error" id="emailError"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Branch</label>
+        <select id="branch" class="form-input">
+          <option value="Mumbai-Main">Mumbai Main</option>
+          <option value="Mumbai-Bandra">Mumbai Bandra</option>
+          <option value="Delhi-Connaught">Delhi Connaught</option>
+          <option value="Delhi-Nehru Place">Delhi Nehru Place</option>
+          <option value="Bangalore-MG Road">Bangalore MG Road</option>
+          <option value="Chennai-Nungambakkam">Chennai Nungambakkam</option>
+          <option value="Pune-Camp">Pune Camp</option>
+          <option value="Ahmedabad-CG Road">Ahmedabad CG Road</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Account type</label>
+        <select id="account_type" class="form-input">
+          <option value="Savings">Savings</option>
+          <option value="Current">Current</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Password *</label>
+      <div class="password-wrap">
+        <input type="password" id="password" class="form-input" placeholder="Create a strong password" oninput="checkStrength(this.value)" autocomplete="new-password">
+        <button class="toggle-pw" type="button" onclick="togglePw('password','togglePw1')">👁</button>
+      </div>
+      <div class="pw-strength">
+        <div class="pw-bar" id="bar1"></div>
+        <div class="pw-bar" id="bar2"></div>
+        <div class="pw-bar" id="bar3"></div>
+        <div class="pw-bar" id="bar4"></div>
+      </div>
+      <div class="pw-hint" id="pwHint">Min 8 chars · uppercase · lowercase · number · special character</div>
+      <div class="form-error" id="passwordError"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Confirm password *</label>
+      <div class="password-wrap">
+        <input type="password" id="confirm_password" class="form-input" placeholder="Repeat your password" autocomplete="new-password">
+        <button class="toggle-pw" type="button" onclick="togglePw('confirm_password','togglePw2')">👁</button>
+      </div>
+      <div class="form-error" id="confirmError"></div>
+    </div>
+
+    <button class="btn btn-primary btn-full" id="registerBtn" onclick="handleRegister()">Create account</button>
+  </div>
+
+  <div class="auth-footer">
+    Already have an account? <a href="/client/login.html">Sign in</a>
+  </div>
+</div>
+
+<script src="/client/js/api.js"></script>
+<script>
+  getUser().then(user => {
+    if (user) window.location.href = '/client/dashboard.html';
+  });
+
+  function togglePw(inputId, btnId) {
+    const inp = document.getElementById(inputId);
+    const btn = document.getElementById(btnId);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  function checkStrength(pw) {
+    const bars = [document.getElementById('bar1'), document.getElementById('bar2'), document.getElementById('bar3'), document.getElementById('bar4')];
+    bars.forEach(b => { b.className = 'pw-bar'; });
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+    const cls = score <= 1 ? 'weak' : score <= 2 ? 'medium' : 'strong';
+    const hints = ['', 'Weak password', 'Fair password', 'Good password', 'Strong password ✓'];
+    for (let i = 0; i < score; i++) bars[i].classList.add(cls);
+    document.getElementById('pwHint').textContent = hints[score] || 'Min 8 chars · uppercase · lowercase · number · special char';
+    document.getElementById('pwHint').style.color = score === 4 ? 'var(--success)' : 'var(--text3)';
+  }
+
+  async function handleRegister() {
+    const btn = document.getElementById('registerBtn');
+    const globalError = document.getElementById('globalError');
+    ['nameError','emailError','passwordError','confirmError'].forEach(clearError);
+    globalError.classList.remove('visible');
+
+    const full_name = document.getElementById('full_name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm = document.getElementById('confirm_password').value;
+    const branch = document.getElementById('branch').value;
+    const account_type = document.getElementById('account_type').value;
+
+    let hasError = false;
+    if (!full_name || full_name.length < 2) { showError('nameError', 'Please enter your full name'); hasError = true; }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('emailError', 'Please enter a valid email'); hasError = true; }
+    if (!password) { showError('passwordError', 'Password is required'); hasError = true; }
+    if (!phone || !/^\+?[0-9]{8,15}$/.test(phone)) { showError('emailError', 'Valid phone is required'); hasError = true; }
+    if (password && password !== confirm) { showError('confirmError', 'Passwords do not match'); hasError = true; }
+    if (hasError) return;
+
+    setLoading(btn, true, 'Creating account...');
+    try {
+      const { user } = await api.post('/auth/register', { full_name, email, phone, password, branch, account_type });
+      showToast('Account created! Welcome to FundTrace!', 'success');
+      setTimeout(() => window.location.href = '/client/dashboard.html', 800);
+    } catch (err) {
+      globalError.textContent = err.message;
+      globalError.classList.add('visible');
+      setLoading(btn, false);
+    }
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') handleRegister(); });
+</script>
+</body>
+</html>

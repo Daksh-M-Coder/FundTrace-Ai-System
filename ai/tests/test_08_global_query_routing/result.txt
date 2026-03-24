@@ -1,0 +1,182 @@
+[
+  {
+    "label": "Officer login",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[10 biggest transactions] HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[10 biggest transactions] success",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[10 biggest transactions] had_db_data",
+    "status": "PASS",
+    "note": "no DB data used"
+  },
+  {
+    "label": "[10 biggest transactions] no hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[10 biggest transactions] not entity-locked",
+    "status": "FAIL",
+    "note": "AI returned entity-specific data instead of global"
+  },
+  {
+    "label": "[top 10 by amount] HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[top 10 by amount] success",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[top 10 by amount] had_db_data",
+    "status": "PASS",
+    "note": "no DB data used"
+  },
+  {
+    "label": "[top 10 by amount] no hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[top 10 by amount] not entity-locked",
+    "status": "PASS",
+    "note": "AI returned entity-specific data instead of global"
+  },
+  {
+    "label": "[largest transactions] HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[largest transactions] success",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[largest transactions] had_db_data",
+    "status": "PASS",
+    "note": "no DB data used"
+  },
+  {
+    "label": "[largest transactions] no hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[largest transactions] not entity-locked",
+    "status": "PASS",
+    "note": "AI returned entity-specific data instead of global"
+  },
+  {
+    "label": "[biggest single tx] HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[biggest single tx] success",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[biggest single tx] had_db_data",
+    "status": "PASS",
+    "note": "no DB data used"
+  },
+  {
+    "label": "[biggest single tx] no hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[biggest single tx] not entity-locked",
+    "status": "PASS",
+    "note": "AI returned entity-specific data instead of global"
+  },
+  {
+    "label": "[all accounts balance] HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[all accounts balance] success",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[all accounts balance] had_db_data",
+    "status": "PASS",
+    "note": "no DB data used"
+  },
+  {
+    "label": "[all accounts balance] no hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[all accounts balance] not entity-locked",
+    "status": "PASS",
+    "note": "AI returned entity-specific data instead of global"
+  },
+  {
+    "label": "[channel breakdown] HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[channel breakdown] success",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[channel breakdown] had_db_data",
+    "status": "PASS",
+    "note": "no DB data used"
+  },
+  {
+    "label": "[channel breakdown] no hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[channel breakdown] not entity-locked",
+    "status": "PASS",
+    "note": "AI returned entity-specific data instead of global"
+  },
+  {
+    "label": "[total system flow] HTTP 200",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[total system flow] success",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[total system flow] had_db_data",
+    "status": "PASS",
+    "note": "no DB data used"
+  },
+  {
+    "label": "[total system flow] no hallucination",
+    "status": "PASS",
+    "note": ""
+  },
+  {
+    "label": "[total system flow] not entity-locked",
+    "status": "FAIL",
+    "note": "AI returned entity-specific data instead of global"
+  }
+]

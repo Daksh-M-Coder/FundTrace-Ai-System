@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — FundTrace Bank</title>
+<link rel="stylesheet" href="/client/css/app.css">
+<style>
+  .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .quick-action { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px 12px; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .quick-action:hover { border-color: var(--border-strong); background: var(--surface2); transform: translateY(-1px); }
+  .quick-action-icon { font-size: 22px; margin-bottom: 6px; }
+  .quick-action-label { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-title { font-size: 15px; font-weight: 600; }
+  .send-form { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; display: none; }
+  .send-form.open { display: block; }
+  .recipient-preview { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .stat-card-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 4px; }
+  .stat-card-val { font-size: 20px; font-weight: 600; }
+  .notif-panel { position: fixed; right: 0; top: 54px; bottom: 0; width: 320px; background: var(--surface); border-left: 0.5px solid var(--border); transform: translateX(100%); transition: transform 0.25s ease; z-index: 200; overflow-y: auto; padding: 16px; }
+  .notif-panel.open { transform: translateX(0); }
+  .notif-item { padding: 10px 12px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); margin-bottom: 8px; font-size: 13px; }
+  .notif-item.unread { background: var(--info-bg); border-color: #B5D4F4; }
+  .notif-title { font-weight: 500; margin-bottom: 2px; }
+  .notif-body { color: var(--text2); font-size: 12px; }
+  .notif-time { font-size: 11px; color: var(--text3); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-logo"><span class="logo-dot"></span> FundTrace Bank</div>
+  <nav style="display:flex; gap:4px; margin-left:16px;">
+    <a href="/client/dashboard.html" class="nav-item active" style="padding:6px 12px; font-size:13px;">Dashboard</a>
+    <a href="/client/transactions.html" class="nav-item" style="padding:6px 12px; font-size:13px;">Transactions</a>
+    <a href="/client/friends.html" class="nav-item" style="padding:6px 12px; font-size:13px;">Connections</a>
+    <a href="/client/settings.html" class="nav-item" style="padding:6px 12px; font-size:13px;">Settings</a>
+  </nav>
+  <div class="topbar-right">
+    <div class="notif-bell" onclick="toggleNotifPanel()" id="notifBell">🔔</div>
+    <span class="topbar-name" id="topbarName">Loading...</span>
+    <button class="btn btn-sm" onclick="logout()">Sign out</button>
+  </div>
+</div>
+
+<!-- Notification panel -->
+<div class="notif-panel" id="notifPanel">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+    <span style="font-weight:600;">Notifications</span>
+    <button class="btn btn-sm" onclick="markAllRead()">Mark all read</button>
+  </div>
+  <div id="notifList"><div class="empty-state"><div class="empty-state-icon">🔔</div><div class="empty-state-text">No notifications yet</div></div></div>
+</div>
+
+<div style="max-width:900px; margin:0 auto; padding:24px;">
+
+  <!-- Balance card -->
+  <div class="balance-card" id="balanceCard">
+    <div class="balance-label">Available Balance</div>
+    <div class="balance-amount" id="balanceAmount">Loading...</div>
+    <div style="margin-top:12px; display:flex; gap:20px; font-size:13px; opacity:0.7;">
+      <span>Account: <span id="accountNumber" class="font-mono" style="color:#fff;">...</span></span>
+      <span>ID: <span id="uniqueCode" style="font-weight:600; letter-spacing:1px;">...</span></span>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card"><div class="stat-card-label">Total sent</div><div class="stat-card-val" id="totalSent">—</div></div>
+    <div class="stat-card"><div class="stat-card-label">Total received</div><div class="stat-card-val" id="totalReceived">—</div></div>
+    <div class="stat-card"><div class="stat-card-label">Transactions</div><div class="stat-card-val" id="txnCount">—</div></div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="quick-actions">
+    <div class="quick-action" onclick="toggleSendForm()">
+      <div class="quick-action-icon">💸</div>
+      <div class="quick-action-label">Send Money</div>
+    </div>
+    <div class="quick-action" onclick="copyUniqueId()">
+      <div class="quick-action-icon">🔗</div>
+      <div class="quick-action-label">Share my ID</div>
+    </div>
+    <div class="quick-action" onclick="window.location.href='/client/friends.html'">
+      <div class="quick-action-icon">👥</div>
+      <div class="quick-action-label">Connections</div>
+    </div>
+    <div class="quick-action" onclick="window.location.href='/client/transactions.html'">
+      <div class="quick-action-icon">📋</div>
+      <div class="quick-action-label">History</div>
+    </div>
+  </div>
+
+  <!-- Send money form -->
+  <div class="send-form" id="sendForm">
+    <div class="section-header">
+      <span class="section-title">Send Money</span>
+      <button class="btn btn-sm" onclick="toggleSendForm()">✕ Cancel</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Recipient (FundTrace ID, Account No., or Name)</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="recipientQuery" class="form-input" placeholder="FT-XXXXXX or ACC-2024-XXXXXX" oninput="debounceSearch(this.value)">
+        <button class="btn" onclick="lookupRecipient()">Search</button>
+      </div>
+      <div class="form-error" id="recipientError"></div>
+    </div>
+
+    <div class="recipient-preview" id="recipientPreview" style="display:none;">
+      <div class="avatar" id="recipientAvatar">?</div>
+      <div>
+        <div style="font-weight:500;" id="recipientName">—</div>
+        <div style="font-size:12px; color:var(--text3);" id="recipientMeta">—</div>
+      </div>
+      <button class="btn btn-sm" style="margin-left:auto;" onclick="clearRecipient()">✕</button>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group">
+        <label class="form-label">Amount (₹)</label>
+        <input type="number" id="sendAmount" class="form-input" placeholder="500.00" min="1" step="0.01">
+        <div class="form-error" id="amountError"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Channel</label>
+        <select id="sendChannel" class="form-input">
+          <option value="UPI">UPI (instant)</option>
+          <option value="IMPS">IMPS (instant)</option>
+          <option value="NEFT">NEFT (2 hours)</option>
+          <option value="RTGS" id="rtgsOption">RTGS (min ₹2L)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Note (optional)</label>
+      <input type="text" id="sendNote" class="form-input" placeholder="Rent for March, Split bill, etc.">
+    </div>
+
+    <div class="form-error" id="sendError"></div>
+    <button class="btn btn-primary btn-full" id="sendBtn" onclick="handleSend()">Send Money</button>
+  </div>
+
+  <!-- Recent transactions -->
+  <div class="section-header">
+    <span class="section-title">Recent Transactions</span>
+    <a href="/client/transactions.html" class="btn btn-sm">View all</a>
+  </div>
+  <div id="txnList">
+    <div style="text-align:center; padding:20px; color:var(--text3);"><span class="spinner"></span></div>
+  </div>
+</div>
+
+<!-- Send success modal -->
+<div class="modal-backdrop" id="successModal">
+  <div class="modal" style="text-align:center;">
+    <div style="font-size:48px; margin-bottom:12px;">✅</div>
+    <div class="modal-title">Money Sent!</div>
+    <div style="font-size:14px; color:var(--text2); margin-bottom:8px;" id="successMsg">—</div>
+    <div style="font-size:13px; color:var(--text3);" id="txnIdDisplay">—</div>
+    <div class="modal-footer" style="justify-content:center;">
+      <button class="btn btn-primary" onclick="closeSuccess()">Done</button>
+    </div>
+  </div>
+</div>
+
+<script src="/client/js/api.js"></script>
+<script>
+let currentUser = null;
+let selectedRecipient = null;
+let searchTimeout = null;
+
+async function init() {
+  currentUser = await requireLogin('client');
+  if (!currentUser) return;
+
+  document.getElementById('topbarName').textContent = currentUser.full_name.split(' ')[0];
+  document.getElementById('balanceAmount').textContent = formatCurrency(currentUser.balance);
+  document.getElementById('accountNumber').textContent = currentUser.account_number;
+  document.getElementById('uniqueCode').textContent = currentUser.unique_code;
+
+  loadTransactions();
+  loadNotifications();
+
+  // Real-time socket
+  initSocket({
+    onTransaction: (data) => {
+      loadTransactions();
+      // Refresh balance
+      api.get('/transactions/account').then(({ user }) => {
+        document.getElementById('balanceAmount').textContent = formatCurrency(user.balance);
+        currentUser.balance = user.balance;
+      });
+    }
+  });
+}
+
+async function loadTransactions() {
+  try {
+    const { transactions } = await api.get('/transactions/history?limit=10');
+    renderTransactions(transactions);
+
+    const sent = transactions.filter(t => t.from_user_id === currentUser.id);
+    const recv = transactions.filter(t => t.to_user_id === currentUser.id);
+    const totalSent = sent.reduce((s, t) => s + t.amount, 0);
+    const totalRecv = recv.reduce((s, t) => s + t.amount, 0);
+
+    document.getElementById('totalSent').textContent = formatCurrency(totalSent);
+    document.getElementById('totalReceived').textContent = formatCurrency(totalRecv);
+    document.getElementById('txnCount').textContent = transactions.length;
+  } catch (e) {
+    document.getElementById('txnList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Could not load transactions</div></div>';
+  }
+}
+
+function renderTransactions(txns) {
+  if (!txns || txns.length === 0) {
+    document.getElementById('txnList').innerHTML = '<div class="empty-state"><div class="empty-state-icon">💳</div><div class="empty-state-text">No transactions yet. Send money to get started!</div></div>';
+    return;
+  }
+  document.getElementById('txnList').innerHTML = '<div class="txn-list">' + txns.map(t => {
+    const isSent = t.from_user_id === currentUser.id;
+    const other = isSent ? (t.receiver_name || 'Unknown') : (t.sender_name || 'Unknown');
+    const sign = isSent ? '-' : '+';
+    const amtClass = isSent ? 'sent' : 'received';
+    const icon = isSent ? '↑' : '↓';
+    return `
+      <div class="txn-item">
+        <div class="txn-icon ${amtClass}">${icon}</div>
+        <div>
+          <div class="txn-name">${isSent ? 'To: ' : 'From: '}${other}</div>
+          <div class="txn-meta">${t.channel} · ${timeAgo(t.created_at)}${t.note ? ' · ' + t.note : ''}</div>
+        </div>
+        <div class="txn-amount ${amtClass}">${sign}${formatCurrency(t.amount)}</div>
+      </div>`;
+  }).join('') + '</div>';
+}
+
+async function loadNotifications() {
+  try {
+    const { notifications, unread } = await api.get('/transactions/notifications/all');
+    if (unread > 0) {
+      const bell = document.getElementById('notifBell');
+      bell.innerHTML = `🔔<span class="notif-count">${Math.min(unread, 99)}</span>`;
+    }
+    if (!notifications.length) return;
+    document.getElementById('notifList').innerHTML = notifications.map(n => `
+      <div class="notif-item ${n.read ? '' : 'unread'}">
+        <div class="notif-title">${n.title}</div>
+        <div class="notif-body">${n.body}</div>
+        <div class="notif-time">${timeAgo(n.created_at)}</div>
+      </div>`).join('');
+  } catch (e) {}
+}
+
+function toggleNotifPanel() {
+  document.getElementById('notifPanel').classList.toggle('open');
+}
+
+async function markAllRead() {
+  try {
+    await api.post('/transactions/notifications/read');
+    document.getElementById('notifBell').innerHTML = '🔔';
+    loadNotifications();
+  } catch (e) {}
+}
+
+function toggleSendForm() {
+  document.getElementById('sendForm').classList.toggle('open');
+  clearRecipient();
+}
+
+function debounceSearch(val) {
+  clearTimeout(searchTimeout);
+  if (val.length < 3) return;
+  searchTimeout = setTimeout(() => lookupRecipient(), 600);
+}
+
+async function lookupRecipient() {
+  const q = document.getElementById('recipientQuery').value.trim();
+  if (!q) return;
+  clearError('recipientError');
+  try {
+    const data = await api.get('/transactions/lookup?query=' + encodeURIComponent(q));
+    if (data.results) {
+      // Name search — show first result
+      if (data.results.length === 0) { showError('recipientError', 'No users found'); return; }
+      setRecipient(data.results[0]);
+    } else if (data.user) {
+      setRecipient(data.user);
+    }
+  } catch (e) {
+    showError('recipientError', e.message);
+  }
+}
+
+function setRecipient(user) {
+  selectedRecipient = user;
+  document.getElementById('recipientPreview').style.display = 'flex';
+  document.getElementById('recipientAvatar').textContent = initials(user.full_name);
+  document.getElementById('recipientName').textContent = user.full_name;
+  document.getElementById('recipientMeta').textContent = `${user.unique_code} · ${user.account_number} · ${user.branch || ''}`;
+}
+
+function clearRecipient() {
+  selectedRecipient = null;
+  document.getElementById('recipientPreview').style.display = 'none';
+  document.getElementById('recipientQuery').value = '';
+}
+
+async function handleSend() {
+  const btn = document.getElementById('sendBtn');
+  clearError('sendError'); clearError('amountError'); clearError('recipientError');
+
+  if (!selectedRecipient) { showError('recipientError', 'Please search and select a recipient'); return; }
+
+  const amount = parseFloat(document.getElementById('sendAmount').value);
+  const channel = document.getElementById('sendChannel').value;
+  const note = document.getElementById('sendNote').value.trim();
+
+  if (!amount || amount <= 0) { showError('amountError', 'Please enter a valid amount'); return; }
+  if (amount > currentUser.balance) { showError('amountError', `Insufficient balance (available: ${formatCurrency(currentUser.balance)})`); return; }
+  if (channel === 'RTGS' && amount < 200000) { showError('amountError', 'RTGS minimum transfer is ₹2,00,000'); return; }
+
+  setLoading(btn, true, 'Processing...');
+  try {
+    const result = await api.post('/transactions/send', {
+      to_code: selectedRecipient.unique_code,
+      amount, channel, note
+    });
+
+    // Update balance display
+    currentUser.balance = result.new_balance;
+    document.getElementById('balanceAmount').textContent = formatCurrency(result.new_balance);
+
+    document.getElementById('successMsg').textContent = `${formatCurrency(result.amount)} sent to ${result.to}`;
+    document.getElementById('txnIdDisplay').textContent = 'Txn ID: ' + result.txn_id;
+    document.getElementById('successModal').classList.add('open');
+
+    toggleSendForm();
+    loadTransactions();
+  } catch (e) {
+    showError('sendError', e.message);
+    setLoading(btn, false);
+  }
+}
+
+function closeSuccess() {
+  document.getElementById('successModal').classList.remove('open');
+  document.getElementById('sendBtn').innerHTML = 'Send Money';
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function copyUniqueId() {
+  if (!currentUser) return;
+  navigator.clipboard.writeText(currentUser.unique_code).then(() => {
+    showToast(`Your ID ${currentUser.unique_code} copied to clipboard!`, 'success');
+  });
+}
+
+init();
+</script>
+</body>
+</html>

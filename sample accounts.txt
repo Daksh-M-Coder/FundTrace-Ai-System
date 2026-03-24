@@ -1,0 +1,31 @@
+
+email : abc@gmail.com
+pass : ABCtest@1
+Available Balance
+₹10,000.00
+Account: ACC-2026-499769
+ID: FT-67GMY9
+
+Coupen code:
+CP-V2XHR6	EARLY25K
+
+CP-9HEAFF	500K
+
+
+
+now inside docs make a project_info folder and inside it make an project info.md file where u will put everything in detail like about like 1 IDEA TITLE (Proposed Solution (Describe your Idea / Solution / Prototype)
+
+Detailed explanation of the proposed solution
+How it addresses the problem
+Innovation and uniqueness of the solution)
+2 OUTLINE OF UNIQUE & INNOVAITVE SOLUTION
+3 TECHNICAL APPROACH (Technologies to be used (e.g. programming languages, frameworks, hardware)
+Methodology and process for implementation (Flow Charts/Images/ working prototype))
+4 FEASIBILITY & VIABILITY (Analysis of the feasibility of the idea
+Potential challenges and risks
+Strategies for overcoming these challenges)
+5 IMPACT & BENEFITS (Potential impact on the target audience
+Benefits of the solution (social, economic, environmental, etc.))
+6 BUSINESS MODEL (Business Model overview: Provide a concise description of the proposed business model, including how the idea will generate revenue, who the target customers are, and the value proposition offered.
+Commercialization Potential and Scalability: Outline the size of the target market, the potential for growth and highlight the key steps for bringing the idea to market, including strategies, partnerships, and potential challenges with commercialization.)
+7 Details/Links of References and Research work(also a one page summary of our work)

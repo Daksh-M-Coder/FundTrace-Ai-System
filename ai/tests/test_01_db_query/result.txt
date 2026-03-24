@@ -1,0 +1,38 @@
+=== TEST 01: DB QUERY VERIFICATION ===
+DB path : C:\Users\daksh\Programmer\Learning\COMP TECH SKILL\LOW CODE PROJECTS\FundTrace AI system\server\fundtrace.db
+DB found: True
+  users: 5 rows
+  transactions: 13 rows
+  fraud_alerts: 0 rows
+
+First 5 txns (success=True, count=5):
+  TXN-57334 | XYZ -> ABC | 5000.0 | completed
+  TXN-39386 | ABC -> XYZ | 3000.0 | completed
+  TXN-20245 | None -> ABC | 25000.0 | completed
+  TXN-59869 | None -> ABC | 100000.0 | completed
+  TXN-11935 | ABC -> XYZ | 100000.0 | completed
+
+Biggest 10 txns (count=10):
+  TXN-97309 | 500000.0 | completed
+  TXN-92611 | 500000.0 | completed
+  TXN-59869 | 100000.0 | completed
+  TXN-11935 | 100000.0 | completed
+  TXN-69635 | 100000.0 | completed
+  TXN-31112 | 50000.0 | completed
+  TXN-20245 | 25000.0 | completed
+  TXN-87973 | 20000.0 | completed
+  TXN-96519 | 10000.0 | completed
+  TXN-57334 | 5000.0 | completed
+
+Account lookups (UPPER case-insensitive):
+  FT-LA3CK8: FOUND - {'id': 5, 'unique_code': 'FT-LA3CK8', 'full_name': 'SMILEY', 'balance': 517000.0}
+  FT-75T37P: FOUND - {'id': 4, 'unique_code': 'FT-75T37P', 'full_name': 'DREAM', 'balance': 109000.0}
+  FT-67GMY9: FOUND - {'id': 2, 'unique_code': 'FT-67GMY9', 'full_name': 'ABC', 'balance': 61000.0}
+
+Top balances (count=4):
+  FT-LA3CK8 | SMILEY | 517000.0
+  FT-UF54GD | XYZ | 128000.0
+  FT-75T37P | DREAM | 109000.0
+  FT-67GMY9 | ABC | 61000.0
+
+=== RESULT: ALL CHECKS PASSED ===

@@ -1,0 +1,74 @@
+[
+  {
+    "label": "Q1 First5Txns",
+    "prompt": "Show me the first 5 transactions in the database with sender and receiver names",
+    "had_db_data": true,
+    "status": "PASS",
+    "notes": []
+  },
+  {
+    "label": "Q2 HighRiskAlerts",
+    "prompt": "List all fraud alerts with risk score above 70",
+    "had_db_data": true,
+    "status": "PASS",
+    "notes": []
+  },
+  {
+    "label": "Q3 DormantAccounts",
+    "prompt": "Show all dormant accounts inactive for 90 days",
+    "had_db_data": true,
+    "status": "PASS",
+    "notes": []
+  },
+  {
+    "label": "Q4 TopBalances",
+    "prompt": "What are the top 10 accounts by current balance?",
+    "had_db_data": true,
+    "status": "FAIL",
+    "notes": [
+      "Missing expected: 'FT-'"
+    ]
+  },
+  {
+    "label": "Q5 RecentAlerts",
+    "prompt": "Show all recent fraud alerts",
+    "had_db_data": true,
+    "status": "PASS",
+    "notes": []
+  },
+  {
+    "label": "Q6 CircularFraud",
+    "prompt": "How does circular transaction fraud work? Explain with an example",
+    "had_db_data": true,
+    "status": "PASS",
+    "notes": []
+  },
+  {
+    "label": "Q7 Biggest10",
+    "prompt": "Show the 10 biggest single transactions by amount in the database",
+    "had_db_data": true,
+    "status": "PASS",
+    "notes": []
+  },
+  {
+    "label": "Q8 AllAccounts",
+    "prompt": "Show all client accounts in the database",
+    "had_db_data": true,
+    "status": "PASS",
+    "notes": []
+  },
+  {
+    "label": "Q9 ChannelBreakdown",
+    "prompt": "Show me the transaction volume breakdown by channel",
+    "had_db_data": true,
+    "status": "PASS",
+    "notes": []
+  },
+  {
+    "label": "Q10 SpecificAccount",
+    "prompt": "Show me all transactions for account FT-67GMY9",
+    "had_db_data": true,
+    "status": "PASS",
+    "notes": []
+  }
+]
