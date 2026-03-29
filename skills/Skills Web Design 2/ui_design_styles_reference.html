@@ -1,0 +1,572 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.container { padding: 16px 0; }
+.style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.style-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
+.style-card:hover { border-color: var(--color-border-primary); }
+.style-card.active { border: 2px solid var(--color-border-info); }
+.card-preview { height: 180px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.card-meta { padding: 12px 14px; background: var(--color-background-primary); border-top: 0.5px solid var(--color-border-tertiary); }
+.card-meta h3 { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+.card-meta p { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+.detail-panel { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 20px; margin-top: 16px; }
+.detail-panel h2 { font-size: 16px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 12px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab { font-size: 12px; padding: 6px 12px; border: 0.5px solid var(--color-border-secondary); border-radius: 6px; cursor: pointer; color: var(--color-text-secondary); background: transparent; transition: all 0.15s; }
+.tab.active, .tab:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.info-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px; }
+.info-box h4 { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.info-box p, .info-box li { font-size: 12px; color: var(--color-text-primary); line-height: 1.6; }
+.info-box ul { padding-left: 14px; }
+.code-block { background: var(--color-background-tertiary); border-radius: var(--border-radius-md); padding: 12px; font-family: var(--font-mono); font-size: 11px; color: var(--color-text-primary); white-space: pre; overflow-x: auto; margin-top: 8px; line-height: 1.7; }
+.badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 500; margin: 2px; }
+
+/* ============ STYLE PREVIEWS ============ */
+
+/* 1. Liquid Glass */
+.preview-liquid-glass {
+  background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+  background-size: 200% 200%;
+  animation: lgShift 4s ease infinite;
+}
+@keyframes lgShift { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+.preview-liquid-glass .demo-card {
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 20px;
+  padding: 16px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.5);
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  min-width: 140px;
+}
+.preview-liquid-glass .demo-card .title { font-size: 10px; opacity: 0.7; margin-bottom: 4px; }
+.preview-liquid-glass .demo-card .value { font-size: 22px; font-weight: 600; }
+
+/* 2. Minimalism */
+.preview-minimalism { background: #FAFAF8; }
+.preview-minimalism .demo-content { text-align: left; padding: 20px; width: 200px; }
+.preview-minimalism .demo-headline { font-size: 28px; font-weight: 300; color: #111; line-height: 1.1; letter-spacing: -0.03em; font-family: Georgia, serif; }
+.preview-minimalism .demo-sub { font-size: 10px; color: #999; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.1em; }
+.preview-minimalism .demo-btn { margin-top: 12px; display: inline-block; background: #111; color: #fff; padding: 8px 18px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 0; }
+
+/* 3. Claymorphism */
+.preview-claymorphism { background: #FFF5EE; }
+.preview-claymorphism .demo-card {
+  background: white;
+  border-radius: 24px;
+  padding: 16px 20px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.06), inset 0 2px 0 rgba(255,255,255,0.9);
+  font-size: 12px;
+  text-align: center;
+  min-width: 130px;
+}
+.preview-claymorphism .clay-icon {
+  width: 48px; height: 48px; border-radius: 16px;
+  background: linear-gradient(135deg, #A8EDEA, #FED6E3);
+  margin: 0 auto 10px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15), inset 0 2px 4px rgba(255,255,255,0.6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.preview-claymorphism .clay-btn {
+  background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+  color: white; border-radius: 50px; padding: 8px 18px;
+  font-size: 11px; font-weight: 700; margin-top: 8px; display: inline-block;
+  box-shadow: 0 6px 16px rgba(255,107,107,0.4), inset 0 2px 3px rgba(255,255,255,0.3);
+}
+
+/* 4. Neo Brutalism */
+.preview-neo-brutalism { background: #FFE600; }
+.preview-neo-brutalism .demo-content { padding: 20px; }
+.preview-neo-brutalism .demo-card {
+  background: white; border: 2px solid #000; border-radius: 0;
+  padding: 14px 18px; box-shadow: 5px 5px 0 #000;
+  max-width: 180px;
+}
+.preview-neo-brutalism .neo-title { font-size: 18px; font-weight: 900; color: #000; line-height: 1.1; font-family: Arial Black, sans-serif; }
+.preview-neo-brutalism .neo-btn {
+  display: inline-block; background: #000; color: #FFE600;
+  padding: 8px 14px; font-size: 10px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  border: 2px solid #000; box-shadow: 3px 3px 0 #FFE600;
+  margin-top: 10px; border-radius: 0;
+}
+
+/* 5. Skeuomorphism */
+.preview-skeuomorphism {
+  background: #2C2C2E;
+  background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 4px);
+}
+.preview-skeuomorphism .demo-panel {
+  background: linear-gradient(180deg, #3C3C3C, #2A2A2A);
+  border: 1px solid #1A1A1A;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12);
+  width: 180px;
+}
+.preview-skeuomorphism .skeu-btn {
+  background: linear-gradient(180deg, #5A9FD4, #2A75B8, #1F5F99);
+  border: 1px solid #1A5080; border-radius: 6px;
+  padding: 8px 16px; color: white; font-size: 11px; font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 3px 6px rgba(0,0,0,0.4);
+  display: block; width: 100%; margin-bottom: 8px; text-align: center;
+  text-shadow: 0 -1px 0 rgba(0,0,0,0.3);
+}
+.preview-skeuomorphism .skeu-label { font-size: 10px; color: rgba(255,255,255,0.5); margin-bottom: 4px; letter-spacing: 0.05em; }
+.preview-skeuomorphism .skeu-slider-track {
+  height: 8px; background: linear-gradient(180deg, #1A1A1A, #3A3A3A);
+  border-radius: 4px; border: 1px solid #111;
+  box-shadow: inset 0 2px 3px rgba(0,0,0,0.5); margin-bottom: 12px;
+  position: relative;
+}
+.preview-skeuomorphism .skeu-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e0e0e0, #a0a0a0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  position: absolute; top: -5px; left: 45%;
+}
+
+/* 6. Glassmorphism */
+.preview-glassmorphism {
+  background: linear-gradient(135deg, #0093E9, #80D0C7, #3A1C71);
+  background-size: 200%;
+  animation: lgShift 6s ease infinite;
+}
+.preview-glassmorphism .demo-card {
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.22); border-radius: 18px;
+  padding: 16px 18px; color: white; font-size: 12px; min-width: 160px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.preview-glassmorphism .glass-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.preview-glassmorphism .glass-val { font-size: 16px; font-weight: 600; }
+.preview-glassmorphism .glass-label { font-size: 10px; opacity: 0.65; }
+.preview-glassmorphism .glass-bar-track { height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; }
+.preview-glassmorphism .glass-bar-fill { height: 100%; border-radius: 3px; background: rgba(255,255,255,0.7); width: 65%; }
+
+/* 7. Neumorphism */
+.preview-neumorphism { background: #E0E5EC; }
+.preview-neumorphism .demo-content { padding: 20px; }
+.preview-neumorphism .neu-card {
+  background: #E0E5EC; border-radius: 20px; padding: 16px;
+  box-shadow: 6px 6px 12px rgba(163,177,198,0.6), -6px -6px 12px rgba(255,255,255,0.8);
+  width: 170px;
+}
+.preview-neumorphism .neu-btn {
+  background: #E0E5EC; border: none; border-radius: 10px;
+  padding: 8px 0; font-size: 12px; font-weight: 600; color: #4A90E2;
+  box-shadow: 4px 4px 8px rgba(163,177,198,0.6), -4px -4px 8px rgba(255,255,255,0.8);
+  width: 100%; text-align: center; margin-bottom: 10px;
+}
+.preview-neumorphism .neu-track {
+  height: 8px; background: #E0E5EC; border-radius: 4px;
+  box-shadow: inset 2px 2px 4px rgba(163,177,198,0.5), inset -2px -2px 4px rgba(255,255,255,0.7);
+  margin: 8px 0; position: relative;
+}
+.preview-neumorphism .neu-fill { height: 100%; border-radius: 4px; width: 60%; background: #4A90E2; }
+
+/* 8. Aurora UI */
+.preview-aurora { background: #050510; overflow: hidden; }
+.preview-aurora .aurora-blob1 { position: absolute; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle, rgba(0,194,255,0.25), transparent 70%); top: -60px; left: -40px; animation: aBlob 8s ease-in-out infinite; }
+.preview-aurora .aurora-blob2 { position: absolute; width: 180px; height: 180px; border-radius: 50%; background: radial-gradient(circle, rgba(139,0,255,0.25), transparent 70%); bottom: -60px; right: -40px; animation: aBlob 10s ease-in-out infinite reverse; }
+@keyframes aBlob { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-20px)} }
+.preview-aurora .demo-card {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px; padding: 16px 18px; color: white; font-size: 12px;
+  min-width: 150px; position: relative; z-index: 1;
+}
+.preview-aurora .aurora-glow-text { background: linear-gradient(135deg,#00C2FF,#8B00FF); background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-size:20px; font-weight:700; }
+.preview-aurora .aurora-btn {
+  display: inline-block; margin-top: 10px;
+  background: linear-gradient(135deg, #00C2FF, #8B00FF);
+  color: white; padding: 7px 16px; border-radius: 50px;
+  font-size: 11px; font-weight: 600;
+  box-shadow: 0 0 16px rgba(0,194,255,0.4);
+}
+
+/* 9. Dark Luxury */
+.preview-dark-luxury { background: #0D0B08; }
+.preview-dark-luxury .demo-content { padding: 20px; }
+.preview-dark-luxury .lux-card {
+  background: #1C1914; border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 2px; padding: 16px; max-width: 180px; position: relative;
+}
+.preview-dark-luxury .lux-card::before { content:''; position:absolute; top:0; left:0; width:32px; height:1px; background:linear-gradient(90deg,#C9A84C,transparent); }
+.preview-dark-luxury .lux-card::after { content:''; position:absolute; top:0; left:0; width:1px; height:32px; background:linear-gradient(180deg,#C9A84C,transparent); }
+.preview-dark-luxury .lux-title { font-size:18px; font-family:Georgia,serif; font-style:italic; color:#F5EDD8; letter-spacing:-0.01em; line-height:1.2; }
+.preview-dark-luxury .lux-line { width:40px; height:1px; background:linear-gradient(90deg,#C9A84C,transparent); margin:10px 0; }
+.preview-dark-luxury .lux-label { font-size:9px; letter-spacing:0.18em; text-transform:uppercase; color:#C9A84C; }
+.preview-dark-luxury .lux-btn {
+  display:inline-block; margin-top:10px;
+  background:linear-gradient(135deg,#C9A84C,#D4B060); color:#0D0B08;
+  padding:7px 14px; font-size:9px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; border-radius:0;
+}
+
+/* 10. Retro Pixel */
+.preview-retro-pixel { background: #1A1A2E; }
+.preview-retro-pixel::after {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.12) 3px,rgba(0,0,0,0.12) 4px);
+}
+.preview-retro-pixel .demo-content { padding: 20px; position: relative; z-index: 1; }
+.preview-retro-pixel .pixel-panel {
+  background: #0F3460; border: 3px solid #E94560; border-radius: 0;
+  padding: 12px 14px; max-width: 180px;
+  box-shadow: 4px 4px 0 #000;
+}
+.preview-retro-pixel .pixel-title { font-family: 'Courier New', monospace; font-size: 14px; font-weight: 900; color: #E94560; letter-spacing: 0.05em; }
+.preview-retro-pixel .pixel-sub { font-family: 'Courier New', monospace; font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+.preview-retro-pixel .pixel-btn {
+  display:inline-block; margin-top:10px; background:#E94560; color:white;
+  padding:7px 12px; font-size:10px; font-weight:900;
+  font-family:'Courier New',monospace; text-transform:uppercase; border-radius:0;
+  box-shadow: 3px 3px 0 #000;
+}
+.preview-retro-pixel .pixel-hp { margin-top: 10px; }
+.preview-retro-pixel .hp-label { font-family:monospace; font-size:9px; color:rgba(255,255,255,0.5); margin-bottom:3px; }
+.preview-retro-pixel .hp-track { background:#000; border:2px solid rgba(255,255,255,0.4); height:10px; }
+.preview-retro-pixel .hp-fill { height:100%; width:70%; background:linear-gradient(90deg,#00FF00,#FFFF00); }
+</style>
+
+<div class="container">
+  <div class="style-grid" id="styleGrid"></div>
+  <div class="detail-panel" id="detailPanel" style="display:none;"></div>
+</div>
+
+<script>
+const styles = [
+  {
+    id: 'liquid-glass',
+    name: 'Liquid Glass',
+    tagline: 'Refractive, lens-like UI surfaces',
+    tags: ['Apple iOS 26', 'Premium', 'Animated'],
+    concept: 'Glass surfaces that refract and distort what\'s behind them — like touching frozen water. Introduced by Apple in iOS 26, it extends glassmorphism with physical thickness and lens effects.',
+    colors: ['rgba(255,255,255,0.14) surface', '#667eea to #f093fb bg', 'White text only', 'Iridescent edge highlights'],
+    dosArr: ['Rich animated gradient background mandatory', 'Add specular highlight streak (1-2px top line)', 'backdrop-filter: blur + saturate + brightness', 'Large border-radius: 20-28px'],
+    dontsArr: ['No glass over flat/white backgrounds', 'No dark text on glass panels', 'No more than 3-5 glass layers (performance)', 'No solid, opaque backgrounds'],
+    css: `/* Liquid Glass Card */
+.glass {
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(24px) saturate(1.8) brightness(1.05);
+  border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.5);
+}`,
+    bestFor: ['Music players', 'iOS-style web apps', 'Luxury SaaS', 'Personal portfolios', 'Weather dashboards']
+  },
+  {
+    id: 'minimalism',
+    name: 'Minimalism',
+    tagline: 'Every pixel must earn its place',
+    tags: ['Swiss Style', 'Editorial', 'Timeless'],
+    concept: 'Intentional restraint where negative space, typography hierarchy, and monochromatic palettes do all the work. Removing decoration forces structure to carry meaning.',
+    colors: ['#FAFAF8 off-white background', '#111 near-black text', 'One accent only (#0047FF)', 'E5E5E5 for borders'],
+    dosArr: ['Let typography do the heavy lifting', 'Strict 8pt spacing grid', 'One accent color used sparingly', 'High-quality consistent photography'],
+    dontsArr: ['Never add decoration for its own sake', 'Never use more than 2 fonts', 'No gradients or unnecessary shadows', 'No rounded corners > 4-6px'],
+    css: `/* Minimalist Button */
+.btn {
+  background: #111;
+  color: #fff;
+  border-radius: 0;
+  padding: 14px 32px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+}`,
+    bestFor: ['Architecture studios', 'Luxury fashion', 'Photography portfolios', 'High-end products', 'Editorial platforms']
+  },
+  {
+    id: 'claymorphism',
+    name: 'Claymorphism',
+    tagline: 'Soft, puffy, touchable 3D clay objects',
+    tags: ['Playful', '3D Feel', 'Friendly'],
+    concept: 'UI elements look like soft, rounded clay objects — inflated, tactile, toy-like. Every element should look like you could pinch it. Warm, approachable, and joyful.',
+    colors: ['#FFF5EE cream background', 'Teal #00B4A0', 'Coral #FF6B6B', 'Yellow #FFD166', 'Violet #9C6FDE'],
+    dosArr: ['Proper inset shadows for inflated effect', 'Color-matched shadows (element color at 40% opacity)', 'Rounded fonts only (Nunito, Fredoka)', 'Bounce animations on interactions'],
+    dontsArr: ['Never use sharp corners', 'No flat/minimal element mixing', 'No serif or condensed fonts', 'Avoid complex data-heavy layouts'],
+    css: `/* Clay Button */
+.clay-btn {
+  background: linear-gradient(145deg, #FF8A80, #FF5252);
+  border-radius: 50px;
+  padding: 16px 36px;
+  box-shadow:
+    0 8px 20px rgba(255,82,82,0.35),
+    inset 0 2px 4px rgba(255,255,255,0.4),
+    inset 0 -2px 4px rgba(0,0,0,0.1);
+}`,
+    bestFor: ['Kids apps', 'Health & wellness', 'Food delivery', 'Education platforms', 'Productivity tools']
+  },
+  {
+    id: 'neo-brutalism',
+    name: 'Neo Brutalism',
+    tagline: 'Raw, hard-edged, deliberately unconventional',
+    tags: ['Bold', 'Anti-polish', 'Distinct'],
+    concept: 'Loud color, hard offset box shadows (zero blur), thick black borders, and massive typography. Anti-beautiful on purpose. Rebelliously distinct and rawly honest.',
+    colors: ['#FFE600 electric yellow', '#00FF85 hot green', '#0066FF electric blue', '#000000 strict black borders', '#FFFFFF background'],
+    dosArr: ['box-shadow: Xpx Xpx 0 #000 (never blurred)', 'Border-radius 0 (or max 4px)', 'Bold weights only (800-900)', 'Press effect on :active (translateXY)'],
+    dontsArr: ['No blur or gradient shadows', 'No soft/rounded corners', 'No thin fonts (300, 400)', 'Never use more than 2 accent colors'],
+    css: `/* Neo Brutalist Button */
+.neo-btn {
+  background: #FFE600;
+  border: 2px solid #000;
+  border-radius: 0;
+  padding: 14px 28px;
+  box-shadow: 4px 4px 0 #000;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.neo-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}`,
+    bestFor: ['Startup landing pages', 'Creative agencies', 'Fashion/streetwear', 'Music platforms', 'Developer tools']
+  },
+  {
+    id: 'skeuomorphism',
+    name: 'Skeuomorphism',
+    tagline: 'Realistic physical materials and textures',
+    tags: ['Tactile', 'Realistic', 'Premium'],
+    concept: 'Digital interfaces that mimic real-world physical objects — brushed metal, leather, wood. Not literal kitsch, but refined material realism with consistent lighting physics.',
+    colors: ['#2C2C2E dark metal bg', '#3C3C3C surface', '#5A9FD4 button blue', 'rgba(255,255,255,0.25) highlights'],
+    dosArr: ['Multi-layer shadows (4+ layers minimum)', 'Consistent light source (always top-left)', 'Inset shadows for recessed elements', 'Include subtle material texture'],
+    dontsArr: ['Never mix with flat design inconsistently', 'No inconsistent light direction', 'No single-layer shadows', 'No texture so strong it becomes noise'],
+    css: `/* Skeuomorphic Button */
+.skeu-btn {
+  background: linear-gradient(180deg, 
+    #5A9FD4, #2A75B8, #1F5F99);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.25),
+    inset 0 -1px 0 rgba(0,0,0,0.2),
+    0 4px 8px rgba(0,0,0,0.4);
+  border-radius: 8px;
+}`,
+    bestFor: ['Audio production tools', 'Smart home panels', 'Luxury hardware pages', 'Premium instruments', 'Gaming inventory']
+  },
+  {
+    id: 'glassmorphism',
+    name: 'Glassmorphism',
+    tagline: 'Frosted glass panels floating in luminous space',
+    tags: ['Ethereal', 'Layered', 'Modern'],
+    concept: 'UI surfaces simulate frosted glass — translucent, blurred, floating. Creates depth through transparency. The interface feels atmospheric and dreamy.',
+    colors: ['Deep purple-blue gradient bg', 'rgba(255,255,255,0.12) panels', 'rgba(255,255,255,0.22) border', 'White text exclusively'],
+    dosArr: ['Rich colorful gradient/blob background mandatory', 'Layer panels at different blur depths (8/16/24px)', 'Add backdrop-saturate for vibrancy', 'Use -webkit-backdrop-filter for Safari'],
+    dontsArr: ['Never use on white/flat backgrounds', 'No dark/opaque text on glass', 'No more than 4 stacked glass layers', 'Blur value must be 10-24px range'],
+    css: `/* Glass Card */
+.glass-card {
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  border: 1px solid rgba(255,255,255,0.20);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+}`,
+    bestFor: ['Analytics dashboards', 'Finance/crypto apps', 'AI product pages', 'Gaming portals', 'Auth screens']
+  },
+  {
+    id: 'neumorphism',
+    name: 'Neumorphism',
+    tagline: 'Elements extruded from a single soft material',
+    tags: ['Soft UI', 'Meditative', 'Tactile'],
+    concept: 'Elements look like they\'re pushed out of or pressed into the background material. Dual shadows (light + dark) create a soft 3D illusion. Interface feels sculpted from one continuous surface.',
+    colors: ['#E0E5EC background = element color', 'rgba(163,177,198,0.6) dark shadow', 'rgba(255,255,255,0.8) light shadow', '#4A90E2 single accent only'],
+    dosArr: ['Background and element MUST be same color', 'Always use dual shadow (light + dark)', 'Include pressed/inset state for interactions', 'One accent color for active states only'],
+    dontsArr: ['Never use different bg and element colors', 'No single shadows', 'No multiple colors (destroys monochrome)', 'Don\'t use on complex data-heavy interfaces'],
+    css: `/* Neumorphic Card */
+.neu {
+  background: #E0E5EC;
+  border-radius: 20px;
+  box-shadow: 
+    6px 6px 12px rgba(163,177,198,0.6),
+    -6px -6px 12px rgba(255,255,255,0.8);
+}
+/* Pressed state */
+.neu:active {
+  box-shadow:
+    inset 4px 4px 8px rgba(163,177,198,0.6),
+    inset -4px -4px 8px rgba(255,255,255,0.8);
+}`,
+    bestFor: ['Health & fitness apps', 'Music players', 'Smart home panels', 'Meditation apps', 'Settings panels']
+  },
+  {
+    id: 'aurora-ui',
+    name: 'Aurora UI',
+    tagline: 'Luminous gradient meshes on cosmic dark backgrounds',
+    tags: ['Futuristic', 'Animated', 'Glowing'],
+    concept: 'Shimmering, shifting gradients of vivid color that bleed across deep dark backgrounds. Inspired by Northern Lights. Every element radiates color onto surroundings.',
+    colors: ['#050510 deep dark bg', '#00C2FF electric blue', '#8B00FF violet', '#FF006E hot pink', 'White text only'],
+    dosArr: ['Animate aurora background (8-16s loops)', 'Use gradient text for headings', 'Glow effects match element gradient colors', 'Add subtle noise grain (3-4%)'],
+    dontsArr: ['Never use on light backgrounds', 'Don\'t glow everything (kills hierarchy)', 'No warm color dominance (ruins aurora feel)', 'No smooth non-animated backgrounds'],
+    css: `/* Aurora Button */
+.aurora-btn {
+  background: linear-gradient(135deg, #00C2FF, #8B00FF);
+  border-radius: 50px;
+  padding: 14px 32px;
+  color: white;
+  box-shadow: 
+    0 0 20px rgba(0,194,255,0.4),
+    0 0 60px rgba(139,0,255,0.2);
+}
+/* Gradient text */
+.aurora-text {
+  background: linear-gradient(135deg, #00C2FF, #8B00FF);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}`,
+    bestFor: ['AI/ML product pages', 'Cybersecurity platforms', 'Crypto/Web3 apps', 'Gaming platforms', 'Space apps']
+  },
+  {
+    id: 'dark-luxury',
+    name: 'Dark Luxury',
+    tagline: 'Opulence through restraint — gold and dark velvet',
+    tags: ['Premium', 'Gold', 'Editorial'],
+    concept: 'Digital equivalent of a Rolls Royce interior. Deep warm darks, considered gold accents, and impeccable typography convey exclusivity. Whisper, don\'t shout.',
+    colors: ['#0D0B08 warm near-black bg', '#1C1914 card surface', '#C9A84C luxury gold accent', '#F5EDD8 warm off-white text'],
+    dosArr: ['Typography IS the luxury — use beautiful serifs', 'Gold used sparingly (10-15% of elements)', 'Generous whitespace in every section', 'All-caps + wide tracking for labels'],
+    dontsArr: ['Never use bright or neon colors', 'No rounded corners > 4px', 'Never use stock photography', 'No urgent CTAs — subtlety is key'],
+    css: `/* Gold Button */
+.luxury-btn {
+  background: linear-gradient(
+    135deg, #C9A84C, #D4B060, #A87C28);
+  color: #0D0B08;
+  padding: 14px 40px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border-radius: 0;
+  box-shadow: 0 4px 20px rgba(201,168,76,0.3);
+}`,
+    bestFor: ['Luxury fashion brands', 'Private banking', 'High-end real estate', 'Fine dining', 'Premium memberships']
+  },
+  {
+    id: 'retro-pixel',
+    name: 'Retro Pixel',
+    tagline: '8-bit nostalgia with pixel-perfect constraints',
+    tags: ['Pixel Art', 'Nostalgic', 'Indie'],
+    concept: 'Full 8-bit/16-bit video game aesthetic — pixel fonts, chunky borders, hard shadows, CRT scanlines, dithering patterns. The constraint IS the art form.',
+    colors: ['#1A1A2E deep navy bg', '#E94560 hot pixel red', '#0F3460 panel blue', '#FFFFFF white text', '#00FF00 game green'],
+    dosArr: ['Use image-rendering: pixelated everywhere', 'All sizes multiples of 4px or 8px', 'Zero border-radius (max 4px absolute)', 'steps() timing functions (NOT ease/linear)', 'Add CRT scanline overlay'],
+    dontsArr: ['Never mix with modern smooth fonts', 'No blurred box-shadows', 'No smooth/eased animations', 'Never anti-alias pixel fonts', 'No border-radius > 4px'],
+    css: `/* Pixel Button */
+.pixel-btn {
+  background: #E94560;
+  border: none;
+  border-radius: 0;
+  padding: 12px 24px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  box-shadow: 4px 4px 0 #000;
+}
+.pixel-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}`,
+    bestFor: ['Indie game studios', 'Developer portfolios', 'Retro gaming platforms', 'Chiptune/8-bit music', 'Hackathon pages']
+  }
+];
+
+const previews = {
+  'liquid-glass': `<div class="preview-liquid-glass card-preview"><div class="demo-card"><div class="title">Active Users</div><div class="value">24.8k</div></div></div>`,
+  'minimalism': `<div class="preview-minimalism card-preview"><div class="demo-content"><div class="demo-headline">Less<br>is<br>More.</div><div class="demo-sub">Design Studio</div><div class="demo-btn">Explore</div></div></div>`,
+  'claymorphism': `<div class="preview-claymorphism card-preview"><div class="demo-card"><div class="clay-icon">🧘</div><div style="font-size:13px;font-weight:700;color:#333">Breathe Easy</div><div class="clay-btn">Start Session</div></div></div>`,
+  'neo-brutalism': `<div class="preview-neo-brutalism card-preview"><div class="demo-content"><div class="demo-card"><div class="neo-title">BUILD<br>FAST.</div><div class="neo-btn">GET STARTED</div></div></div></div>`,
+  'skeuomorphism': `<div class="preview-skeuomorphism card-preview"><div class="demo-panel"><div class="skeu-label">VOLUME</div><div class="skeu-slider-track"><div class="skeu-thumb"></div></div><div class="skeu-btn">PLAY ▶</div><div class="skeu-btn" style="background:linear-gradient(180deg,#4A4A4A,#2A2A2A);border-color:#1A1A1A">STOP ■</div></div></div>`,
+  'glassmorphism': `<div class="preview-glassmorphism card-preview"><div class="demo-card"><div class="glass-row"><span class="glass-label">Revenue</span><span class="glass-val">$48.2k</span></div><div class="glass-bar-track"><div class="glass-bar-fill"></div></div><div style="margin-top:10px"><div class="glass-label">Growth</div><div style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.9)">+12.4%</div></div></div></div>`,
+  'neumorphism': `<div class="preview-neumorphism card-preview"><div class="demo-content"><div class="neu-card"><div class="neu-btn">▶ Play Now</div><div style="font-size:11px;color:#888;margin-bottom:4px">Progress</div><div class="neu-track"><div class="neu-fill"></div></div><div style="font-size:11px;color:#888;margin-top:6px">0:45 / 3:22</div></div></div></div>`,
+  'aurora-ui': `<div class="preview-aurora card-preview"><div class="aurora-blob1"></div><div class="aurora-blob2"></div><div class="demo-card"><div class="aurora-glow-text">AI Studio</div><div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px">Next-gen creative tools</div><div class="aurora-btn">Launch App</div></div></div>`,
+  'dark-luxury': `<div class="preview-dark-luxury card-preview"><div class="demo-content"><div class="lux-card"><div class="lux-label">Collection 2025</div><div class="lux-title">The Art of<br>Timekeeping.</div><div class="lux-line"></div><div class="lux-btn">Discover</div></div></div></div>`,
+  'retro-pixel': `<div class="preview-retro-pixel card-preview"><div class="demo-content"><div class="pixel-panel"><div class="pixel-title">GAME<br>STUDIO</div><div class="pixel-sub">> PRESS START</div><div class="pixel-hp"><div class="hp-label">HP ■■■■■■■□□□</div><div class="hp-track"><div class="hp-fill"></div></div></div><div class="pixel-btn">PLAY</div></div></div></div>`
+};
+
+function buildDetailPanel(s) {
+  return `
+    <h2>${s.name}</h2>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(event,'concept')">Concept</button>
+      <button class="tab" onclick="switchTab(event,'guidelines')">Guidelines</button>
+      <button class="tab" onclick="switchTab(event,'code')">CSS Code</button>
+      <button class="tab" onclick="switchTab(event,'usecases')">Best For</button>
+    </div>
+    <div class="tab-content active" id="tab-concept">
+      <div class="info-grid">
+        <div class="info-box">
+          <h4>Philosophy</h4>
+          <p>${s.concept}</p>
+        </div>
+        <div class="info-box">
+          <h4>Color Palette</h4>
+          <ul>${s.colors.map(c => `<li>${c}</li>`).join('')}</ul>
+        </div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-guidelines">
+      <div class="info-grid">
+        <div class="info-box">
+          <h4>✓ Do</h4>
+          <ul>${s.dosArr.map(d=>`<li>${d}</li>`).join('')}</ul>
+        </div>
+        <div class="info-box">
+          <h4>✗ Don't</h4>
+          <ul>${s.dontsArr.map(d=>`<li>${d}</li>`).join('')}</ul>
+        </div>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-code">
+      <pre class="code-block">${s.css.replace(/</g,'&lt;')}</pre>
+    </div>
+    <div class="tab-content" id="tab-usecases">
+      <div class="info-box">
+        <h4>Best suited for</h4>
+        <ul>${s.bestFor.map(b=>`<li>${b}</li>`).join('')}</ul>
+      </div>
+    </div>
+  `;
+}
+
+function switchTab(e, id) {
+  e.currentTarget.closest('.detail-panel').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  e.currentTarget.closest('.detail-panel').querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+let activeCard = null;
+const grid = document.getElementById('styleGrid');
+const panel = document.getElementById('detailPanel');
+
+styles.forEach(s => {
+  const card = document.createElement('div');
+  card.className = 'style-card';
+  card.dataset.id = s.id;
+  card.innerHTML = `
+    ${previews[s.id]}
+    <div class="card-meta">
+      <h3>${s.name}</h3>
+      <p>${s.tagline}</p>
+    </div>
+  `;
+  card.addEventListener('click', () => {
+    if (activeCard) activeCard.classList.remove('active');
+    card.classList.add('active');
+    activeCard = card;
+    panel.style.display = 'block';
+    panel.innerHTML = buildDetailPanel(s);
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+  grid.appendChild(card);
+});
+</script>

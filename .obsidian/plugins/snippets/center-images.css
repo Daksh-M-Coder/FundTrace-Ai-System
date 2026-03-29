@@ -1,0 +1,13 @@
+/* Center align all images in Markdown viewing mode */
+.markdown-preview-view img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Optional: Also center images in Live Preview editing mode */
+.cm-content .image-embed img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
